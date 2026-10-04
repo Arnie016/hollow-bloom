@@ -33,3 +33,7 @@ Check the commercial-use terms of your Higgsfield plan before selling the game. 
 ## Not shipped
 - `assets/raw`, `assets/ref`: source files kept for re-processing. They are excluded from builds.
 - "An Unwritten Room" and other music in FAB ASSETS. The track is not horror in tone, and the Apple soundbank redistribution terms are unverified.
+
+## Selected soundtrack
+- **Waiting in the Dark — Take 2**, by DoodilyDo / Arnav, generated with Suno: https://suno.com/song/21244337-5081-4da5-8078-93e05dfb09ea
+- Public listening link appears on the title screen. The audio file is not bundled yet: Suno download allowance was exhausted on 5 October 2026.

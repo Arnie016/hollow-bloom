@@ -344,7 +344,7 @@ export function createUI(ctx) {
     const t = $('titleMenu'); const { items, slots } = titleItems();
     if (title.view === 'main') {
       title.i = Math.min(title.i, items.length - 1);
-      t.innerHTML = `<ul class="menu">${items.map(([, l, sub], i) => `<li data-i="${i}" class="${i === title.i ? 'sel' : ''}">${l}${sub ? `<small>${sub}</small>` : ''}</li>`).join('')}</ul><div class="foothint"><span class="kc">↑↓</span>select <span class="kc">ENTER</span>confirm · headphones recommended</div>`;
+      t.innerHTML = `<ul class="menu">${items.map(([, l, sub], i) => `<li data-i="${i}" class="${i === title.i ? 'sel' : ''}">${l}${sub ? `<small>${sub}</small>` : ''}</li>`).join('')}</ul><div class="foothint"><span class="kc">↑↓</span>select <span class="kc">ENTER</span>confirm · headphones recommended<br><a href="https://suno.com/song/21244337-5081-4da5-8078-93e05dfb09ea" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:12px;color:#e8cf94;text-transform:none;letter-spacing:.06em">Listen to Waiting in the Dark on Suno ↗</a></div>`;
       listMenu(t, items, title, (k) => { if (k === 'enter') titlePick(); else tick(); });
     } else if (title.view === 'load') {
       title.li = Math.min(title.li, Math.max(0, slots.length - 1));
