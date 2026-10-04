@@ -23,9 +23,11 @@ export class AudioSys {
     for (let i = 0; i < len; i++) { last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02; b[i] = last * 3.5; } this.brown = bl;
     // rain bed
     this.rainG = ctx.createGain(); this.rainG.gain.value = 0;
+    // Keep continuous rain beneath dialogue and music; thunder uses the separate SFX bus.
+    this.rainTrim = ctx.createGain(); this.rainTrim.gain.value = 0.4;
     const rn = this.loopNoise(this.noise); const rbp = ctx.createBiquadFilter(); rbp.type = 'bandpass'; rbp.frequency.value = 2400; rbp.Q.value = 0.4;
     this.rainLP = ctx.createBiquadFilter(); this.rainLP.type = 'lowpass'; this.rainLP.frequency.value = 9000;
-    rn.connect(rbp).connect(this.rainLP).connect(this.rainG).connect(this.ambBus);
+    rn.connect(rbp).connect(this.rainLP).connect(this.rainG).connect(this.rainTrim).connect(this.ambBus);
     const rum = this.loopNoise(this.brown); const rg = ctx.createGain(); rg.gain.value = 0.35; rum.connect(rg).connect(this.rainLP);
     // building creaks / wind bed
     this.windG = ctx.createGain(); this.windG.gain.value = 0.05; const wn = this.loopNoise(this.brown); const wlp = ctx.createBiquadFilter(); wlp.type = 'lowpass'; wlp.frequency.value = 400; wn.connect(wlp).connect(this.windG).connect(this.ambBus);
