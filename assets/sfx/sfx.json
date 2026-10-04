@@ -1,0 +1,179 @@
+{
+"amb_rain": [
+"assets/sfx/amb_rain.mp3"
+],
+"amb_room": [
+"assets/sfx/amb_room.mp3"
+],
+"amb_storm": [
+"assets/sfx/amb_storm.mp3"
+],
+"amb_wind": [
+"assets/sfx/amb_wind.mp3"
+],
+"bed_dark": [
+"assets/sfx/bed_dark.mp3"
+],
+"belt": [
+"assets/sfx/belt_0.mp3"
+],
+"braam": [
+"assets/sfx/braam.mp3"
+],
+"breath_hiding": [
+"assets/sfx/breath_hiding.mp3"
+],
+"chop": [
+"assets/sfx/chop_0.mp3"
+],
+"clang": [
+"assets/sfx/clang_0.mp3",
+"assets/sfx/clang_1.mp3",
+"assets/sfx/clang_2.mp3"
+],
+"cloth": [
+"assets/sfx/cloth_0.mp3",
+"assets/sfx/cloth_1.mp3",
+"assets/sfx/cloth_2.mp3",
+"assets/sfx/cloth_3.mp3"
+],
+"creak": [
+"assets/sfx/creak_0.mp3",
+"assets/sfx/creak_1.mp3",
+"assets/sfx/creak_2.mp3"
+],
+"debris": [
+"assets/sfx/debris_0.mp3",
+"assets/sfx/debris_1.mp3",
+"assets/sfx/debris_2.mp3"
+],
+"door_close": [
+"assets/sfx/door_close_0.mp3"
+],
+"door_open": [
+"assets/sfx/door_open_0.mp3",
+"assets/sfx/door_open_1.mp3"
+],
+"draw": [
+"assets/sfx/draw_0.mp3",
+"assets/sfx/draw_1.mp3",
+"assets/sfx/draw_2.mp3"
+],
+"drone_deep": [
+"assets/sfx/drone_deep_0.mp3",
+"assets/sfx/drone_deep_1.mp3"
+],
+"drop": [
+"assets/sfx/drop_0.mp3"
+],
+"engine_start": [
+"assets/sfx/engine_start.mp3"
+],
+"gasp": [
+"assets/sfx/gasp.mp3"
+],
+"grind": [
+"assets/sfx/grind.mp3"
+],
+"gun_click": [
+"assets/sfx/gun_click.mp3"
+],
+"gun_latch": [
+"assets/sfx/gun_latch.mp3"
+],
+"heartbeat": [
+"assets/sfx/heartbeat.mp3"
+],
+"hit_blunt": [
+"assets/sfx/hit_blunt_0.mp3",
+"assets/sfx/hit_blunt_1.mp3",
+"assets/sfx/hit_blunt_2.mp3",
+"assets/sfx/hit_blunt_3.mp3",
+"assets/sfx/hit_blunt_4.mp3"
+],
+"hit_soft": [
+"assets/sfx/hit_soft_0.mp3",
+"assets/sfx/hit_soft_1.mp3",
+"assets/sfx/hit_soft_2.mp3",
+"assets/sfx/hit_soft_3.mp3",
+"assets/sfx/hit_soft_4.mp3"
+],
+"impact": [
+"assets/sfx/impact_0.mp3"
+],
+"owl": [
+"assets/sfx/owl.mp3"
+],
+"plank": [
+"assets/sfx/plank_0.mp3",
+"assets/sfx/plank_1.mp3",
+"assets/sfx/plank_2.mp3"
+],
+"slice": [
+"assets/sfx/slice_0.mp3",
+"assets/sfx/slice_1.mp3"
+],
+"smash": [
+"assets/sfx/smash_0.mp3",
+"assets/sfx/smash_1.mp3",
+"assets/sfx/smash_2.mp3"
+],
+"step_carpet": [
+"assets/sfx/step_carpet_0.mp3",
+"assets/sfx/step_carpet_1.mp3",
+"assets/sfx/step_carpet_2.mp3",
+"assets/sfx/step_carpet_3.mp3",
+"assets/sfx/step_carpet_4.mp3"
+],
+"step_concrete": [
+"assets/sfx/step_concrete_0.mp3",
+"assets/sfx/step_concrete_1.mp3",
+"assets/sfx/step_concrete_2.mp3",
+"assets/sfx/step_concrete_3.mp3",
+"assets/sfx/step_concrete_4.mp3"
+],
+"step_fungus": [
+"assets/sfx/step_fungus_0.mp3",
+"assets/sfx/step_fungus_1.mp3",
+"assets/sfx/step_fungus_2.mp3",
+"assets/sfx/step_fungus_3.mp3",
+"assets/sfx/step_fungus_4.mp3"
+],
+"step_glass": [
+"assets/sfx/step_glass_0.mp3",
+"assets/sfx/step_glass_1.mp3",
+"assets/sfx/step_glass_2.mp3",
+"assets/sfx/step_glass_3.mp3",
+"assets/sfx/step_glass_4.mp3"
+],
+"step_metal": [
+"assets/sfx/step_metal_0.mp3",
+"assets/sfx/step_metal_1.mp3",
+"assets/sfx/step_metal_2.mp3",
+"assets/sfx/step_metal_3.mp3",
+"assets/sfx/step_metal_4.mp3"
+],
+"step_wood": [
+"assets/sfx/step_wood_0.mp3",
+"assets/sfx/step_wood_1.mp3",
+"assets/sfx/step_wood_2.mp3",
+"assets/sfx/step_wood_3.mp3",
+"assets/sfx/step_wood_4.mp3"
+],
+"sting_dark": [
+"assets/sfx/sting_dark_0.mp3",
+"assets/sfx/sting_dark_1.mp3"
+],
+"sting_detect": [
+"assets/sfx/sting_detect.mp3"
+],
+"thud": [
+"assets/sfx/thud_0.mp3",
+"assets/sfx/thud_1.mp3",
+"assets/sfx/thud_2.mp3"
+],
+"thunder": [
+"assets/sfx/thunder_0.mp3",
+"assets/sfx/thunder_1.mp3"
+]
+}

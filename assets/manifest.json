@@ -1,0 +1,114 @@
+{
+ "chars": {
+  "frenzied": {
+   "model": "assets/models/frenzied.glb",
+   "height": 1.78,
+   "clips": {
+    "attack": "assets/anim/frenzied_attack.glb",
+    "death": "assets/anim/frenzied_death.glb",
+    "idle": "assets/anim/frenzied_idle.glb",
+    "run": "assets/anim/frenzied_run.glb",
+    "scream": "assets/anim/frenzied_scream.glb",
+    "walk": "assets/anim/wren_walk.glb"
+   }
+  },
+  "knocker": {
+   "model": "assets/models/knocker.glb",
+   "height": 1.72,
+   "clips": {
+    "attack": "assets/anim/knocker_attack.glb",
+    "death": "assets/anim/knocker_death.glb",
+    "idle": "assets/anim/knocker_idle.glb",
+    "run": "assets/anim/knocker_run.glb",
+    "scream": "assets/anim/knocker_scream.glb",
+    "walk": "assets/anim/knocker_walk.glb"
+   }
+  },
+  "lurker": {
+   "model": "assets/models/lurker.glb",
+   "height": 1.8,
+   "clips": {
+    "attack": "assets/anim/lurker_attack.glb",
+    "death": "assets/anim/lurker_death.glb",
+    "idle": "assets/anim/lurker_idle.glb",
+    "run": "assets/anim/lurker_run.glb",
+    "walk": "assets/anim/lurker_walk.glb"
+   }
+  },
+  "wren": {
+   "model": "assets/models/wren.glb",
+   "height": 1.65,
+   "clips": {
+    "aim": "assets/anim/wren_aim.glb",
+    "crouch": "assets/anim/wren_crouch.glb",
+    "crouchidle": "assets/anim/wren_crouchidle.glb",
+    "death": "assets/anim/wren_death.glb",
+    "hit": "assets/anim/wren_hit.glb",
+    "idle": "assets/anim/wren_idle.glb",
+    "injured": "assets/anim/wren_injured.glb",
+    "pickup": "assets/anim/wren_pickup.glb",
+    "push": "assets/anim/wren_push.glb",
+    "run": "assets/anim/wren_run.glb",
+    "stab": "assets/anim/wren_stab.glb",
+    "throw": "assets/anim/wren_throw.glb",
+    "walk": "assets/anim/wren_walk.glb"
+   }
+  }
+ },
+ "props": {
+  "barrel": {
+   "model": "assets/models/barrel.glb"
+  },
+  "boiler": {
+   "model": "assets/models/boiler.glb"
+  },
+  "car": {
+   "model": "assets/models/car.glb"
+  },
+  "cocoon": {
+   "model": "assets/models/cocoon.glb"
+  },
+  "counter": {
+   "model": "assets/models/counter.glb"
+  },
+  "craft": {
+   "model": "assets/models/craft.glb"
+  },
+  "crate": {
+   "model": "assets/models/crate.glb"
+  },
+  "dumpster": {
+   "model": "assets/models/dumpster.glb"
+  },
+  "fungusmass": {
+   "model": "assets/models/fungusmass.glb"
+  },
+  "funguspillar": {
+   "model": "assets/models/funguspillar.glb"
+  },
+  "generator": {
+   "model": "assets/models/generator.glb"
+  },
+  "pistol": {
+   "model": "assets/models/pistol.glb"
+  },
+  "plank": {
+   "model": "assets/models/plank.glb"
+  },
+  "shelf": {
+   "model": "assets/models/shelf.glb"
+  },
+  "sofa": {
+   "model": "assets/models/sofa.glb"
+  },
+  "survival-pistol-original": {
+   "model": "assets/models/survival-pistol-original.glb"
+  },
+  "table": {
+   "model": "assets/models/table.glb"
+  },
+  "wardrobe": {
+   "model": "assets/models/wardrobe.glb"
+  }
+ }
+}
