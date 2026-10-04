@@ -15,6 +15,7 @@ function put(k, v) {
 export const storageOK = (() => { try { localStorage.setItem('atb.t', '1'); localStorage.removeItem('atb.t'); return true; } catch { return false; } })();
 
 export const DEFAULT_SETTINGS = {
+  difficulty: 'medium',
   guidance: 'delayed',   // off | delayed | always
   subtitles: true, voice: true,
   master: 9, effects: 8, music: 7, voiceVol: 9,

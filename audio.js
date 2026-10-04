@@ -53,6 +53,7 @@ export class AudioSys {
     if (!active) { this.menuBeat = 0; return; }
     this.layers.drone.gain.setTargetAtTime(0.15, t, 2);
     this.rainG.gain.setTargetAtTime(0.18, t, 1);
+    this.rainTrim.gain.setTargetAtTime(0.4, t, 0.7);
     this.menuBeat -= dt;
     if (this.menuBeat <= 0) {
       const notes = [164.81, 246.94, 174.61, 220, 164.81, 130.81, 185, 123.47];
@@ -123,8 +124,15 @@ export class AudioSys {
   casing(pos) { if (!this.ok) return; const o = this.out(pos, 0.5); [0.35, 0.52, 0.62, 0.68].forEach((t, i) => { this.tone(o, { t, f: 4200 - i * 300, dur: 0.12, gain: 0.12 / (i + 1) }); this.tone(o, { t, f: 6100, dur: 0.06, gain: 0.05 }); }); }
   reload(pos) { if (!this.ok) return; const o = this.out(pos, 0.8); [0, 0.35, 0.6, 0.95].forEach((t, i) => { this.burst(o, { t, dur: 0.04, type: 'highpass', f: 2500, gain: 0.8 }); this.tone(o, { t, f: 900 + i * 300, dur: 0.07, gain: 0.15 }); }); }
   click(pos, n = 3, vol = 1) { // knocker clicking
-    if (!this.ok) return; const o = this.out(pos, vol);
-    for (let i = 0; i < n; i++) { const t = i * (0.05 + Math.random() * 0.04); this.burst(o, { t, dur: 0.02, f: 2200 + Math.random() * 900, q: 6, gain: 1.4, attack: 0.0005 }); this.tone(o, { t, f: 180, dur: 0.03, gain: 0.25 }); }
+    if (!this.ok) return; const o = this.out(pos, vol, 0.42);
+    for (let i = 0; i < n; i++) {
+      const t = i * (0.065 + Math.random() * 0.025), f = 1150 + Math.random() * 450;
+      this.burst(o, { t, dur: 0.018, f: 2900, q: 3, gain: 0.85, attack: 0.0005 });
+      this.tone(o, { t, f, f2: f * 0.72, dur: 0.095, gain: 0.24 });
+      // Two restrained reflections give the snap a hollow, room-sized tail.
+      this.tone(o, { t: t + 0.105, f: f * 0.96, f2: f * 0.72, dur: 0.08, gain: 0.07 });
+      this.tone(o, { t: t + 0.22, f: f * 0.94, f2: f * 0.7, dur: 0.09, gain: 0.028 });
+    }
     this.tone(o, { t: n * 0.045, f: 520, f2: 170, dur: 0.13, gain: 0.08 });
     this.burst(o, { t: n * 0.07, dur: 0.25, type: 'lowpass', f: 300, gain: 0.25, buf: this.brown }); // throaty gurgle
   }
@@ -170,6 +178,7 @@ export class AudioSys {
     const set = (g, v) => g.gain.setTargetAtTime(v, t, 0.3);
     set(this.layers.drone, Math.min(1, Math.max(0, I - 0.2)) * 0.35 * k);
     set(this.layers.strings, Math.max(0, Math.min(1, I - 2.2)) * 0.35 * k);
+    set(this.rainTrim, 0.65);
     set(this.rainG, (indoor ? 0.07 + outsideProx * 0.2 : 0.55) * (0.3 + 0.7 * k));
     this.rainLP.frequency.setTargetAtTime(indoor ? 900 : 9000, t, 0.4);
     set(this.windG, 0.05 * k + (indoor ? 0.04 : 0));

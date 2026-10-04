@@ -12,6 +12,7 @@ import { AudioSys } from './audio.js';
 import { makeSurvivor, animate } from './models.js';
 import { Enemy } from './ai.js';
 import { FX } from './fx.js';
+import { Scorch } from './scorch.js';
 import { preload, loaded, Character, prop, load } from './assets.js';
 import { MELEE, buildMelee } from './weapons.js';
 import { createUI } from './ui.js';
@@ -77,6 +78,7 @@ addEventListener('resize', onResize);
 
 const world = L.buildWorld(scene);
 const fx = new FX(scene);
+const scorch = new Scorch(world.burnableGrowth || [], fx);
 const audio = new AudioSys();
 
 const flash = new THREE.SpotLight(0xfff0d8, 0, 28, 0.46, 0.5, 1.1);
@@ -100,6 +102,8 @@ let envK = 1;
 
 // ------------------------------------------------------------------ settings (persisted; see save.js)
 const settings = S.loadSettings();
+settings.difficulty ??= 'medium';
+const incomingDamage = () => ({ easy: 0.5, medium: 1, hard: 1.5 }[settings.difficulty] ?? 1);
 const QUALITY = { low: { pr: 0.75, ao: false, bloom: false, shadow: 512 }, medium: { pr: 1, ao: false, bloom: true, shadow: 1024 }, high: { pr: 1.5, ao: true, bloom: true, shadow: 1024 }, ultra: { pr: 2, ao: true, bloom: true, shadow: 2048 } };
 const SHAKE = { full: 1, reduced: 0.4, off: 0 };
 let ui = null, appliedQ = null;
@@ -388,7 +392,7 @@ W.onAttack = (e) => {
     e.stagger = 0; later(1.0, () => { P.hp = 0; die(e.type); }); return;
   }
   audio.sting('gasp', 0.8);
-  P.struggle = { e, t: 2.4, n: 0, need: P.melee ? 4 : 7 }; audio.scream(e.headPos, e.type, 1); shake(0.25, 0.5); emitSound(P.pos.x, P.pos.z, 7, 'struggle', true);
+  P.struggle = { e, t: settings.difficulty === 'easy' ? 3.6 : settings.difficulty === 'hard' ? 1.8 : 2.4, n: 0, need: P.melee ? 4 : 7 }; audio.scream(e.headPos, e.type, 1); shake(0.25, 0.5); emitSound(P.pos.x, P.pos.z, 7, 'struggle', true);
 };
 W.onEngage = () => { if (W.time - (W.lastSting ?? -99) > 9) { W.lastSting = W.time; audio.sting('sting_detect', 0.75); } };
 W.onEnemyDeath = (e) => { fx.blood(e.pos.clone().setY(1.2)); stats.kills++; };
@@ -509,10 +513,12 @@ function igniteAt(at) {
   const [cx, cz] = L.cellOf(at.x, at.z); const pos = L.walkable(cx, cz) ? new THREE.Vector3(at.x, 0.05, at.z) : new THREE.Vector3(...(() => { const n = L.nearestWalkable(cx, cz) || [cx, cz]; const c = L.center(...n); return [c.x, 0.05, c.z]; })());
   const light = new THREE.PointLight(0xff7a28, 14, 9, 1.6); light.position.copy(pos).setY(0.8); scene.add(light);
   fires.push({ pos, t: 5.5, light, flame: 0, smoke: 0 });
+  scorch.ignite(pos);
   fx.sparks(pos.clone().setY(0.3)); fx.emit(pos, 45, {color: [1, 0.5, 0.08], spread: 3, up: 2, grav: 2, life: 0.65, speed: 1.5});
   audio.fire(pos, 5.5); emitSound(pos.x, pos.z, 14, 'fire', false); shake(0.1, 0.2);
 }
 function updateFires(dt) {
+  scorch.update(dt);
   for (let i = fires.length - 1; i >= 0; i--) {
     const f = fires[i]; f.t -= dt;
     f.light.intensity = (10 + Math.random() * 8) * Math.min(1, f.t);
@@ -528,7 +534,7 @@ function updateFires(dt) {
       const kill = { frenzied: 0.8, lurker: 0.8, knocker: 1.6, bigknocker: 3.5 }[e.type];
       if (e.burn > kill) e.die();
     }
-    if (!P.dead && P.pos.distanceTo(f.pos) < 1.8) { P.hp -= 28 * dt; if (P.hp <= 0) die('fire'); }
+    if (!P.dead && P.pos.distanceTo(f.pos) < 1.8) { P.hp -= 28 * dt * incomingDamage(); if (P.hp <= 0) die('fire'); }
     if (f.t <= 0) { scene.remove(f.light); fires.splice(i, 1); }
   }
 }
@@ -743,7 +749,7 @@ function restoreSnap(sn, fromSave = false) {
   if (fromSave) { notesFound = new Set(sn.notes || []); mapApi.load(sn.map); Object.assign(stats, sn.stats || {}); }
   P.dead = false; P.struggle = null; P.lockT = 0; P.healT = P.craftT = P.reloadT = 0; P.craftWhat = null; P.crouch = false; P.anim = null; W.flashlightOn = sn.flash; P.weapon = 'pistol';
   for (const p of projectiles) scene.remove(p.m); projectiles = [];
-  for (const f of fires) scene.remove(f.light); fires = []; fx.clear();
+  for (const f of fires) scene.remove(f.light); fires = []; fx.clear(); scorch.reset();
   curArea = L.areaAt(P.pos.x, P.pos.z); camPivot.set(P.pos.x, 1.5, P.pos.z); audio.intensity = 1; stageId = null;
   heroC?.play('idle', { fade: 0, restart: true });
   saved = sn;
@@ -835,7 +841,7 @@ function update(dt) {
     if (!e.alive) P.struggle = null;
     else if (s.n >= s.need && P.melee) { P.struggle = null; animOnce('stab', 0.6); later(0.15, () => { audio.swingHit(MELEE[P.melee?.id || 'machete'].kind, e.headPos); fx.blood(e.headPos); e.die(); wear(1); }); }
     else if (s.n >= s.need) { P.struggle = null; e.stagger = 2.2; e.pos.x += dx / d * 1.1; e.pos.z += dz / d * 1.1; audio.stab(e.headPos); e.damage(1, false); animOnce('stab', 0.6); }
-    else if (s.t <= 0) { P.struggle = null; P.hp -= 40; audio.hurt(); fx.blood(P.pos.clone().setY(1.3)); shake(0.4, 0.4); e.atkCool = 2.5; e.stagger = 0.9; if (P.hp <= 0) die(e.type); }
+    else if (s.t <= 0) { P.struggle = null; P.hp -= 40 * incomingDamage(); audio.hurt(); fx.blood(P.pos.clone().setY(1.3)); shake(0.4, 0.4); e.atkCool = 2.5; e.stagger = 0.9; if (P.hp <= 0) die(e.type); }
   }
   // movement
   const f2 = new THREE.Vector3(Math.sin(camYaw), 0, Math.cos(camYaw)), r2 = new THREE.Vector3(-Math.cos(camYaw), 0, Math.sin(camYaw));

@@ -74,6 +74,15 @@ export function createMap() {
       g.fillText(NAMES[a.id] || a.id.toUpperCase(), lx, lz);
     }
     g.textAlign = 'left';
+    // Field landmarks are inked only after discovery, keeping the unexplored route hidden.
+    for (const [x,z,label] of [[18,7,'+ CLINIC'],[31,8,'BROKEN FLOOR'],[58,25,'GENERATOR']]) {
+      if (!isSeen(x,z)) continue;
+      g.font = 'italic 13px Georgia'; g.fillStyle = '#743c28';
+      g.fillText(label, X(x), Z(z)-8);
+    }
+    g.save();g.translate(W-48,42);g.strokeStyle='#403424';g.lineWidth=2;
+    g.beginPath();g.moveTo(0,24);g.lineTo(0,-12);g.lineTo(-6,-3);g.moveTo(0,-12);g.lineTo(6,-3);g.stroke();
+    g.font='bold 14px Georgia';g.fillStyle='#403424';g.fillText('N',-5,-19);g.restore();
     // objective marker
     if (target) {
       const [tx, tz] = target; const cx = X(tx + 0.5), cz = Z(tz + 0.5); const r = s * (0.55 + 0.1 * Math.sin(time * 4));

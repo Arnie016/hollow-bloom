@@ -72,6 +72,38 @@ const CSS = (fab, fabDark, leather, paper) => `
 #packScr .need img { width: 26px; height: 26px; object-fit: contain; } #packScr .need .ok { color: #a9dc86; } #packScr .need .no { color: #f09a86; }
 #packScr .acts { display: flex; gap: 16px; font-size: 12px; letter-spacing: 0.1em; margin-top: 6px; } #packScr .acts .dim { opacity: 0.45; }
 #packScr .foot { display: flex; justify-content: space-between; margin-top: 12px; font-size: 11px; letter-spacing: 0.1em; color: rgba(240,225,195,0.6); }
+
+#packScr .packTabs { display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:16px; }
+#packScr .packTabs button { background:#211f18;color:#d6cab0;border:1px solid #74664b;border-radius:5px;padding:10px 3px;font:600 11px Helvetica;cursor:pointer; }
+#packScr .packTabs button[aria-selected="true"] { background:#dac79b;color:#241e14;box-shadow:0 0 0 1px #eedbb3; }
+#packScr .row { grid-template-columns:76px 1fr;gap:8px;margin:5px 0; }
+#packScr .row[hidden] { display:none; }
+#packScr .row > label { margin-bottom:0;font-size:9px;letter-spacing:.15em; }
+#packScr .pks { display:grid;grid-template-columns:repeat(5,minmax(0,1fr)); }
+#packScr .pk { width:100%;height:52px;max-width:72px; }
+#packScr .pk:hover { border-color:#b9a579;transform:translateY(-2px); }
+#packScr .pk img { width:82%;height:82%;left:9%;top:3%; }
+#packScr .pk .n { font-size:13px; }
+#packScr .pk .tag { font-size:6px;padding:2px; }
+#packScr .det { grid-template-columns:110px 1fr;min-height:145px; }
+#packScr .det .big { width:110px;height:110px; }
+#packScr .head .hint { max-width:240px;line-height:1.6; }
+#mapScr .mapHead { width:90vw;flex-wrap:wrap;justify-content:center;white-space:normal;gap:12px; }
+#mapScr .mapHead b { font-size:20px;letter-spacing:.2em; }
+#mapScr .mapLegend { position:absolute;bottom:10vh;left:5vw;right:5vw;text-align:center;font-size:12px;line-height:1.8;color:#e9ddbf; }
+@media (max-height:700px), (max-width:800px) {
+ #packScr .bag { width:min(640px,94vw);max-height:96vh; }
+ #packScr .body { padding:12px 20px; }
+ #packScr .head { padding:12px 25px; }
+ #packScr .det { grid-template-columns:96px 1fr;min-height:140px;gap:12px;padding-top:12px; }
+ #packScr .det .big { width:96px;height:96px; }
+ #packScr .desc { font-size:12px;margin-bottom:5px; }
+ #packScr .pk { height:44px; }
+ #packScr .head h2 { font-size:12px;letter-spacing:.2em; }
+ #packScr .tape { font-size:20px; }
+ #packScr .foot { gap:12px;font-size:10px; }
+}
+
 /* ---------- menus (title / pause / settings / death) ---------- */
 .menu { list-style: none; margin: 0; padding: 0; }
 .menu li { position: relative; padding: 10px 0 10px 22px; font: 300 22px/1.15 "Helvetica Neue"; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(239,230,210,0.62); cursor: pointer; transition: color 0.15s, padding 0.15s; }
@@ -168,7 +200,7 @@ export function createUI(ctx) {
     const craft = ctx.craftProgress();
     let h = '';
     rows.forEach((row, ri) => {
-      h += `<div class="row"><label>${row.label}</label><div class="pks">`;
+      h += `<div class="row" data-category="${ri}"><label>${row.label}</label><div class="pks">`;
       row.s.forEach((s, ci) => {
         const isRec = !!s.recipe;
         const empty = !isRec && (s.n === 0 || s.n === '0'); const ok = isRec && ctx.canCraft(s.recipe);
@@ -203,12 +235,13 @@ export function createUI(ctx) {
     return `<img class="big" src="${icon(s.k)}"><div><span class="tape">${meta.name}</span><div class="cat">${meta.cat}${typeof s.n === 'number' ? ' · ' + s.n + ' carried' : ''}</div><p class="desc">${meta.desc}</p>${stats}<div class="acts">${acts}</div></div>`;
   }
   function buildPack() {
-    $('packScr').innerHTML = `<div class="shade"></div><div class="bag"><div class="head"><h2>WREN'S PACK</h2><span class="hint"><span class="kc">←↑↓→</span>select <span class="kc">ENTER</span>use <span class="kc">TAB</span>close</span></div><div class="body"><div class="rows"></div><div class="det"></div><div class="foot"><span class="hp"></span><span class="obj"></span></div></div></div>`;
+    $('packScr').innerHTML = `<div class="shade"></div><div class="bag"><div class="head"><h2>WREN'S PACK</h2><span class="hint"><span class="kc">←↑↓→</span>↑↓ category · ←→ item <span class="kc">ENTER</span>use <span class="kc">TAB</span>close</span></div><div class="body"><div class="rows"></div><div class="det"></div><div class="foot"><span class="hp"></span><span class="obj"></span></div></div></div>`;
     refreshRows();
   }
   function refreshRows() {
     const box = $('packScr').querySelector('.rows'); if (!box) return;
     box.innerHTML = rowsHTML(); packSig = sigOf();
+    for (const tab of box.querySelectorAll('[data-tab]')) tab.onclick = () => { pack.r = +tab.dataset.tab; pack.c = Math.min(pack.c, pack.rows[pack.r].s.length - 1); tick(); updateSel(); };
     for (const p of box.querySelectorAll('.pk')) {
       p.onmouseenter = () => { const r = +p.dataset.r, c = +p.dataset.c; if (r !== pack.r || c !== pack.c) { pack.r = r; pack.c = c; updateSel(); } };
       p.onclick = () => { pack.r = +p.dataset.r; pack.c = +p.dataset.c; updateSel(); packAction('enter'); };
@@ -217,6 +250,8 @@ export function createUI(ctx) {
   }
   function updateSel() {
     const d = $('packScr'); if (!d.querySelector('.det')) return;
+    for (const row of d.querySelectorAll('[data-category]')) row.hidden = false;
+    for (const tab of d.querySelectorAll('[data-tab]')) tab.setAttribute('aria-selected', String(+tab.dataset.tab === pack.r));
     for (const p of d.querySelectorAll('.pk')) p.classList.toggle('sel', +p.dataset.r === pack.r && +p.dataset.c === pack.c);
     d.querySelector('.det').innerHTML = detailHTML(pack.rows[pack.r]?.s[pack.c]);
     d.querySelector('.foot .hp').textContent = `HEALTH ${Math.round(ctx.P.hp)}%`;
@@ -296,6 +331,7 @@ export function createUI(ctx) {
   const setSt = { i: 0, from: null };
   const SET_ROWS = [
     ['GAMEPLAY'],
+    ['difficulty', 'Difficulty', ['easy', 'medium', 'hard'], { easy: 'Easy', medium: 'Medium', hard: 'Hard' }, 'Easy: half damage and longer escape struggles. Medium: original balance. Hard: 1.5× damage and shorter struggles. Knocker grabs remain lethal.'],
     ['guidance', 'Objective nudges', ['off', 'delayed', 'always'], { off: 'Off', delayed: 'After 60s stuck', always: 'Always' }, 'A faint marker toward the objective if you seem lost. Wren may also mutter a hint.'],
     ['subtitles', 'Subtitles', [true, false]], ['voice', 'Wren\'s voice', [true, false]],
     ['CONTROLS'],
@@ -404,7 +440,7 @@ export function createUI(ctx) {
   let mapRAF = 0, mapFrom = 'game';
   function openMap(from = 'game') {
     mapFrom = from; U.open = 'map'; show('mapScr'); const info = ctx.mapInfo();
-    $('mapScr').innerHTML = `<div class="mapWrap"><canvas width="1600" height="720"></canvas></div><div class="mapHead"><b>MAP</b><span>${info.area}</span><span>${info.explored}% EXPLORED</span>${info.objective ? `<span class="obj">◎ ${info.objective}</span>` : ''}</div><div class="foothint"><span class="kc">M</span><span class="kc">ESC</span>close</div>`;
+    $('mapScr').innerHTML = `<div class="mapWrap"><canvas width="1600" height="720"></canvas></div><div class="mapHead"><b>WREN’S FIELD MAP</b><span>${info.area}</span><span>${info.explored}% EXPLORED</span>${info.objective ? `<span class="obj">◎ ${info.objective}</span>` : ''}</div><div class="mapLegend">▲ You &nbsp; ◎ Objective &nbsp; ■ Door &nbsp; <span style="color:#a0221c">EXIT</span> Escape &nbsp; ▨ Water &nbsp; ▧ Fungal growth<br>Unmarked areas are unexplored. Your sketch fills in as you move.</div><div class="foothint"><span class="kc">M</span><span class="kc">ESC</span>close</div>`;
     const cv = $('mapScr').querySelector('canvas');
     const loop = () => { if (U.open !== 'map') return; ctx.drawMap(cv); mapRAF = requestAnimationFrame(loop); }; loop();
     ctx.audio?.paper?.();

@@ -690,6 +690,7 @@ function buildFungus(scene, world, wallCells, r, T) {
   }
   // collapsed escape + corridor ceiling bulbs
   shelves.count = ns; bulbs.count = nb; stalks.count = nst; caps.count = nst;
+  world.burnableGrowth = [shelves, bulbs, stalks, caps];
   for (const im of [shelves, bulbs, stalks, caps]) { im.castShadow = true; im.receiveShadow = true; scene.add(im); }
   const myGeo = new THREE.BufferGeometry(); myGeo.setAttribute('position', new THREE.Float32BufferAttribute(myceliumPts, 3));
   scene.add(new THREE.LineSegments(myGeo, new THREE.LineBasicMaterial({ color: 0xefe6d2, transparent: true, opacity: 0.5 })));
