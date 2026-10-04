@@ -25,7 +25,7 @@ export class FX {
     for (let i = 0; i < sn; i++) { const inNest = i < 520; sp[i * 3] = inNest ? (38 + Math.random() * 25) * L.CS : (26 + Math.random() * 12) * L.CS; sp[i * 3 + 1] = Math.random() * L.WALL_H; sp[i * 3 + 2] = inNest ? (17 + Math.random() * 9) * L.CS : (7 + Math.random() * 4) * L.CS; }
     const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
     this.motes = new THREE.Points(sg, new THREE.PointsMaterial({ size: 0.035, color: 0xffd8a0, transparent: true, opacity: 0.55, map: this.points.material.map, depthWrite: false })); scene.add(this.motes); this.motePos = sp;
-    this.decals = []; this.debris = [];
+    this.decals = []; this.debris = []; this.ripples = [];
     this.bloodMat = new THREE.MeshStandardMaterial({ color: 0x3a0806, roughness: 0.25, transparent: true, depthWrite: false });
   }
   emit(p, n, { color = [1, 1, 1], spread = 0.5, up = 1, grav = 1, life = 1.5, speed = 1 } = {}) {
@@ -41,20 +41,30 @@ export class FX {
   glass(p) { this.emit(p, 40, { color: [0.85, 1, 0.95], spread: 3, up: 3, grav: 9, life: 0.8, speed: 1 }); }
   blood(p) { this.emit(p, 26, { color: [0.35, 0.02, 0.02], spread: 2, up: 1.5, grav: 7, life: 0.6, speed: 1.2 }); this.decal(p.x, p.z, 0.25 + Math.random() * 0.3); }
   sparks(p) { this.emit(p, 14, { color: [1, 0.8, 0.4], spread: 3, up: 2, grav: 6, life: 0.3, speed: 1.5 }); }
-  splash(p) { this.emit(p, 8, { color: [0.6, 0.7, 0.8], spread: 1, up: 1.2, grav: 8, life: 0.35, speed: 0.8 }); }
+  splash(p) {
+    this.emit(p, 16, { color: [0.65, 0.8, 0.9], spread: 1.5, up: 1.8, grav: 8, life: 0.5, speed: 1 });
+    if (this.ripples.length >= 24) return;
+    const m = new THREE.Mesh(new THREE.RingGeometry(0.12, 0.15, 24), new THREE.MeshBasicMaterial({color: 0xadcbd5, transparent: true, opacity: 0.5, depthWrite: false, side: THREE.DoubleSide}));
+    m.rotation.x = -Math.PI / 2; m.position.set(p.x, 0.025, p.z); this.scene.add(m); this.ripples.push({m, t: 0.8});
+  }
   decal(x, z, r) { const m = new THREE.Mesh(new THREE.CircleGeometry(r, 12), this.bloodMat.clone()); m.rotation.x = -Math.PI / 2; m.position.set(x + (Math.random() - 0.5) * 0.4, 0.013 + Math.random() * 0.003, z + (Math.random() - 0.5) * 0.4); m.scale.x = 1 + Math.random(); this.scene.add(m); this.decals.push({ m, t: 25 }); }
   clear() { // wipe transient effects (checkpoint restore / new game)
     for (let i = 0; i < this.N; i++) { this.life[i] = 0; this.pp[i * 3 + 1] = -99; }
     this.points.geometry.attributes.position.needsUpdate = true;
     for (const d of this.decals) { this.scene.remove(d.m); d.m.geometry.dispose(); d.m.material.dispose(); }
     for (const d of this.debris) { this.scene.remove(d.m); d.m.geometry.dispose(); d.m.material.dispose(); }
-    this.decals.length = 0; this.debris.length = 0;
+    for (const r of this.ripples) { this.scene.remove(r.m); r.m.geometry.dispose(); r.m.material.dispose(); }
+    this.ripples.length = 0; this.decals.length = 0; this.debris.length = 0;
   }
   dropDebris(x, z, size = 0.5) { // ceiling fragment falling with simple physics
     const m = new THREE.Mesh(new THREE.BoxGeometry(size, size * 0.4, size * 0.8), new THREE.MeshStandardMaterial({ color: 0x5a5650, roughness: 1 })); m.position.set(x, L.WALL_H - 0.2, z); m.castShadow = true; this.scene.add(m);
     this.debris.push({ m, vy: 0, spin: new THREE.Vector3(Math.random(), Math.random(), Math.random()).multiplyScalar(4), landed: false }); this.dust(new THREE.Vector3(x, L.WALL_H - 0.3, z), 20);
   }
   update(dt, camPos, onLand) {
+    for (let i = this.ripples.length - 1; i >= 0; i--) {
+      const r = this.ripples[i]; r.t -= dt; r.m.scale.setScalar(1 + (0.8 - r.t) * 5); r.m.material.opacity = Math.max(0, r.t * 0.6);
+      if (r.t <= 0) { this.scene.remove(r.m); r.m.geometry.dispose(); r.m.material.dispose(); this.ripples.splice(i, 1); }
+    }
     for (const r of this.rain) { const p = r.pos; for (let i = 0; i < r.n; i++) { const b = i * 6; p[b + 1] -= 16 * dt; p[b + 4] -= 16 * dt; if (p[b + 4] < 0) { p[b + 1] += 9; p[b + 4] += 9; } } r.m.geometry.attributes.position.needsUpdate = true; }
     for (let i = 0; i < this.N; i++) { if (this.life[i] <= 0) continue; this.life[i] -= dt; const b = i * 3; this.pv[b + 1] -= this.grav[i] * dt; this.pp[b] += this.pv[b] * dt; this.pp[b + 1] += this.pv[b + 1] * dt; this.pp[b + 2] += this.pv[b + 2] * dt; if (this.pp[b + 1] < 0.01) { this.pp[b + 1] = 0.01; this.pv[b] *= 0.5; this.pv[b + 2] *= 0.5; this.pv[b + 1] = 0; } if (this.life[i] <= 0) this.pp[b + 1] = -99; }
     this.points.geometry.attributes.position.needsUpdate = true; this.points.geometry.attributes.color.needsUpdate = true;

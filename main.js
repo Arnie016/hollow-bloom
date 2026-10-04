@@ -485,12 +485,14 @@ function throwItem(which) {
   if (kind === 'molotov') { const wick = new THREE.PointLight(0xff8030, 3, 3, 2); m.add(wick); }
   m.position.copy(P.pos).add(new THREE.Vector3(0, 1.6, 0)); scene.add(m);
   const v = camFwd.clone().multiplyScalar(13); v.y += 3.2;
-  projectiles.push({ m, v, kind });
+  projectiles.push({ m, v, kind, trail: 0 });
 }
 function updateProjectiles(dt) {
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const p = projectiles[i]; p.v.y -= 9.8 * dt; const prev = p.m.position.clone(); p.m.position.addScaledVector(p.v, dt); p.m.rotation.x += dt * 12;
-    if (p.kind === 'molotov' && Math.random() < 0.6) fx.emit(p.m.position, 1, { color: [1, 0.6, 0.2], spread: 0.2, up: 0.3, grav: -1, life: 0.3 });
+    p.trail += dt * (p.kind === 'molotov' ? 36 : 12);
+    const trailCount = Math.floor(p.trail); p.trail -= trailCount;
+    if (trailCount && p.kind === 'molotov') fx.emit(p.m.position, trailCount, { color: [1, 0.6, 0.2], spread: 0.2, up: 0.3, grav: -1, life: 0.3 });
     const q = p.m.position; const [cx, cz] = L.cellOf(q.x, q.z); let hit = q.y < 0.05 || q.y > L.WALL_H || L.blocksSight(cx, cz) || (L.tile(cx, cz) === 'H' && q.y < 1.4) || (L.tile(cx, cz) === 'M' && q.y < 2.4);
     let hitE = null; for (const e of enemies) if (e.alive && Math.hypot(e.pos.x - q.x, e.pos.z - q.z) < 0.45 && q.y < e.cfg.headY + 0.2) { hit = true; hitE = e; }
     if (!hit) continue;
@@ -500,21 +502,25 @@ function updateProjectiles(dt) {
     else { audio.thud(at); fx.dust(at, 15); }
     if (hitE && p.kind !== 'molotov') { hitE.stagger = p.kind === 'brick' ? 1.8 : 1.4; hitE.damage(p.kind === 'brick' ? 1 : 0, false); if (hitE.alive && hitE.state !== 'COMBAT') hitE.engage({ x: P.pos.x, z: P.pos.z }); }
     else if (p.kind !== 'molotov') emitSound(at.x, at.z, 15, 'throw', false);
-    scene.remove(p.m); projectiles.splice(i, 1);
+    scene.remove(p.m); p.m.geometry.dispose(); p.m.material.dispose(); projectiles.splice(i, 1);
   }
 }
 function igniteAt(at) {
   const [cx, cz] = L.cellOf(at.x, at.z); const pos = L.walkable(cx, cz) ? new THREE.Vector3(at.x, 0.05, at.z) : new THREE.Vector3(...(() => { const n = L.nearestWalkable(cx, cz) || [cx, cz]; const c = L.center(...n); return [c.x, 0.05, c.z]; })());
   const light = new THREE.PointLight(0xff7a28, 14, 9, 1.6); light.position.copy(pos).setY(0.8); scene.add(light);
-  fires.push({ pos, t: 5.5, light });
+  fires.push({ pos, t: 5.5, light, flame: 0, smoke: 0 });
+  fx.sparks(pos.clone().setY(0.3)); fx.emit(pos, 45, {color: [1, 0.5, 0.08], spread: 3, up: 2, grav: 2, life: 0.65, speed: 1.5});
   audio.fire(pos, 5.5); emitSound(pos.x, pos.z, 14, 'fire', false); shake(0.1, 0.2);
 }
 function updateFires(dt) {
   for (let i = fires.length - 1; i >= 0; i--) {
     const f = fires[i]; f.t -= dt;
     f.light.intensity = (10 + Math.random() * 8) * Math.min(1, f.t);
-    fx.emit(f.pos, 3, { color: [1, 0.55 + Math.random() * 0.3, 0.15], spread: 2.2, up: 1.8, grav: -1.5, life: 0.7, speed: 1 });
-    if (Math.random() < 0.3) fx.emit(f.pos.clone().setY(1), 1, { color: [0.15, 0.13, 0.12], spread: 1, up: 1, grav: -0.8, life: 2.5, speed: 0.6 });
+    f.flame += dt * 180; f.smoke += dt * 18;
+    const flames = Math.floor(f.flame); f.flame -= flames;
+    const smoke = Math.floor(f.smoke); f.smoke -= smoke;
+    fx.emit(f.pos, flames, { color: [1, 0.55 + Math.random() * 0.3, 0.15], spread: 2.2, up: 1.8, grav: -1.5, life: 0.7, speed: 1 });
+    if (smoke) fx.emit(f.pos.clone().setY(1), smoke, { color: [0.15, 0.13, 0.12], spread: 1, up: 1, grav: -0.8, life: 2.5, speed: 0.6 });
     for (const e of enemies) {
       if (!e.alive || e.pos.distanceTo(f.pos) > 2.3) continue;
       e.burn = (e.burn || 0) + dt; e.stagger = Math.max(e.stagger, 0.2);
