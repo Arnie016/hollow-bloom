@@ -999,6 +999,7 @@ function loop() {
   requestAnimationFrame(loop);
   const raw = Math.min(0.05, clock.getDelta()); const dt = raw * (W.slowT > 0 ? 0.3 : 1); if (W.slowT > 0) W.slowT -= raw;
   if (!paused) { update(dt); perf(dt); }
+  audio.updateMenu(raw, mode === 'title' && titleReady);
   composer.render(dt);
 }
 { const c = L.center(L.START.x, L.START.z); P.pos.set(c.x, 0, c.z); camPivot.set(c.x, 1.5, c.z); (heroC?.root || hero.root).position.copy(P.pos); (heroC?.root || hero.root).rotation.y = P.yaw; camera.position.set(c.x - 1.8, 1.6, c.z + 0.6); camera.lookAt(c.x + 5, 1.4, c.z); curArea = L.areaAt(c.x, c.z); }

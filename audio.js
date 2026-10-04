@@ -42,6 +42,25 @@ export class AudioSys {
     mk('pulse'); mk('escape');
     this.ok = true;
   }
+  // Original title motif: sparse detuned bells over the existing low drone.
+  updateMenu(dt, active) {
+    if (!this.ok) return;
+    if (!this.menuBus) { this.menuBus = this.ctx.createGain(); this.menuBus.gain.value = 0; this.menuBus.connect(this.musBus); this.menuBeat = 0; this.menuNote = 0; }
+    const t = this.now();
+    this.menuBus.gain.setTargetAtTime(active ? 0.65 : 0, t, active ? 2 : 0.7);
+    if (!active) { this.menuBeat = 0; return; }
+    this.layers.drone.gain.setTargetAtTime(0.15, t, 2);
+    this.rainG.gain.setTargetAtTime(0.18, t, 1);
+    this.menuBeat -= dt;
+    if (this.menuBeat <= 0) {
+      const notes = [164.81, 246.94, 174.61, 220, 164.81, 130.81, 185, 123.47];
+      const f = notes[this.menuNote++ % notes.length];
+      this.tone(this.menuBus, { f, dur: 5.5, gain: 0.15, attack: 0.035 });
+      this.tone(this.menuBus, { f: f * 2.002, dur: 3.8, gain: 0.025, attack: 0.02 });
+      this.tone(this.menuBus, { t: 0.48, f: f * 0.999, dur: 4.5, gain: 0.045, attack: 0.12 });
+      this.menuBeat = this.menuNote % 4 === 0 ? 4.8 : 2.8;
+    }
+  }
   distCurve(k) { const n = 1024, c = new Float32Array(n); for (let i = 0; i < n; i++) { const x = i / n * 2 - 1; c[i] = (1 + k) * x / (1 + k * Math.abs(x)); } return c; }
   loopNoise(buf) { const s = this.ctx.createBufferSource(); s.buffer = buf; s.loop = true; s.loopStart = Math.random(); s.start(0, Math.random()); return s; }
   now() { return this.ctx.currentTime; }
