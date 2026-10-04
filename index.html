@@ -21,7 +21,7 @@
   #inv { position: fixed; right: 48px; bottom: 76px; font-size: 11px; letter-spacing: 0.15em; text-align: right; opacity: 0; transition: opacity 0.6s; line-height: 1.8; text-shadow: 0 1px 4px #000; }
   #prompt { position: fixed; left: 50%; bottom: 22%; transform: translateX(-50%); font-size: 13px; letter-spacing: 0.15em; opacity: 0; transition: opacity 0.25s; text-shadow: 0 1px 6px #000; }
   #prompt b { display: inline-block; border: 1px solid rgba(255,255,255,0.6); padding: 1px 7px; margin-right: 8px; border-radius: 3px; }
-  #toast { position: fixed; left: 42px; bottom: 60px; font-size: 12px; letter-spacing: 0.12em; opacity: 0; transition: opacity 0.5s; }
+  #toast { position: fixed; left: 42px; bottom: 166px; font-size: 12px; letter-spacing: 0.12em; opacity: 0; transition: opacity 0.5s; }
   #cross { position: fixed; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; opacity: 0; transition: opacity 0.2s; }
   #cross::before, #cross::after { content: ""; position: absolute; background: rgba(255,255,255,0.85); }
   #cross::before { left: 10px; top: 0; width: 2px; height: 22px; clip-path: polygon(0 0,100% 0,100% 30%,0 30%,0 70%,100% 70%,100% 100%,0 100%); }
@@ -45,9 +45,9 @@
   #loadbar { height: 100%; width: 0; background: #d8d2c0; transition: width 0.2s; }
   #loading { margin-top: 12px; letter-spacing: 0.35em; font-size: 11px; opacity: 0.6; }
   #loading.go { animation: pulse 2.4s infinite; opacity: 1; }
-  #weapon { position: fixed; right: 48px; bottom: 32px; text-align: right; text-shadow: 0 1px 6px #000; transition: opacity 0.4s; opacity: 0.25; }
-  #weapon b { font-size: 30px; font-weight: 300; } #weapon span { font-size: 14px; opacity: 0.6; } #weapon i { display: block; font-style: normal; font-size: 10px; letter-spacing: 0.3em; opacity: 0.7; margin-top: 2px; }
-  #weapon em { display: block; font-style: normal; font-size: 10px; letter-spacing: 0.2em; opacity: 0.8; margin-bottom: 6px; color: #d8cfb8; }
+  #weapon { position: fixed; left: 42px; bottom: 54px; text-align: left; background: rgba(12,18,17,0.76); padding: 12px 16px; border-left: 2px solid #c4b785; max-width: 340px; text-shadow: 0 1px 6px #000; transition: opacity 0.4s; opacity: 0.25; }
+  #weapon b { font-size: 30px; font-weight: 300; } #weapon span { font-size: 14px; opacity: 0.6; } #weapon i { display: block; font-style: normal; font-size: 12px; letter-spacing: 0.06em; opacity: 1; margin-top: 2px; }
+  #weapon em { display: block; font-style: normal; font-size: 12px; letter-spacing: 0.06em; opacity: 1; margin-bottom: 6px; color: #d8cfb8; }
   .slot.wide { grid-column: span 2; }
   #pack { position: fixed; right: 40px; top: 50%; transform: translateY(-50%); width: 380px; padding: 22px 24px; background: rgba(12,11,9,0.78); border: 1px solid rgba(232,228,218,0.12); backdrop-filter: blur(6px); display: none; z-index: 4; }
   #pack h2 { margin: 0 0 14px; font-weight: 300; font-size: 12px; letter-spacing: 0.4em; opacity: 0.7; }
@@ -89,10 +89,10 @@
   <div id="titleMenu"></div>
   <div class="keys">
     <b>WASD</b><span>move</span><b>SHIFT</b><span>run</span><b>C</b><span>crouch (quiet)</span>
-    <b>RIGHT MOUSE</b><span>aim</span><b>LEFT MOUSE</b><span>fire (while aiming) · knife otherwise</span>
+    <b>RIGHT MOUSE</b><span>aim</span><b>LEFT MOUSE</b><span>use held item — shoot / throw / strike</span>
     <b>F</b><span>melee (knife / scavenged weapon) · takedown · struggle · saber parry</span><b>G</b><span>throw bottle / brick</span>
     <b>R</b><span>reload</span><b>H</b><span>use health kit</span><b>TAB</b><span>backpack &amp; crafting</span>
-    <b>1 / 2 / 3</b><span>pistol · bottle/brick · molotov</span>
+    <b>1 / 2 / 3</b><span>pistol · bottle/brick · molotov · 4 melee</span>
     <b>SPACE</b><span>dodge</span><b>E</b><span>interact / pick up</span><b>HOLD Q</b><span>listen</span>
     <b>L</b><span>flashlight</span><b>X</b><span>swap shoulder</span>
   </div>

@@ -50,10 +50,11 @@ export class AudioSys {
     if (!this.menuBus) { this.menuBus = this.ctx.createGain(); this.menuBus.gain.value = 0; this.menuBus.connect(this.musBus); this.menuBeat = 0; this.menuNote = 0; }
     const t = this.now();
     this.menuBus.gain.setTargetAtTime(active ? 0.65 : 0, t, active ? 2 : 0.7);
-    if (!active) { this.menuBeat = 0; return; }
+    if (!active) { this.menuBeat = 0; this.menuRainTime = 0; return; }
+    this.menuRainTime = (this.menuRainTime || 0) + dt;
     this.layers.drone.gain.setTargetAtTime(0.15, t, 2);
-    this.rainG.gain.setTargetAtTime(0.18, t, 1);
-    this.rainTrim.gain.setTargetAtTime(0.4, t, 0.7);
+    this.rainG.gain.setTargetAtTime(this.menuRainTime > 10 ? 0.18 : 0, t, 2);
+    this.rainTrim.gain.setTargetAtTime(0.28, t, 0.7);
     this.menuBeat -= dt;
     if (this.menuBeat <= 0) {
       const notes = [164.81, 246.94, 174.61, 220, 164.81, 130.81, 185, 123.47];

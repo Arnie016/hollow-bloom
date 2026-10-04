@@ -19,6 +19,7 @@ import { createUI } from './ui.js';
 import * as S from './save.js';
 import { ITEMS, buildItem, renderIcons } from './items.js';
 import { createMap } from './map.js';
+import { PracticeGuide } from './tutorial.js';
 
 const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -130,9 +131,9 @@ if (heroC?.ok) {
   heroC.root.updateMatrixWorld(true);
   const hand = heroC.bones.RightHand, ws = new THREE.Vector3();
   const g = prop('survival_pistol_original', { size: [0.05, 0.17, 0.24] }) || prop('pistol', { size: [0.05, 0.17, 0.24] }) || new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.12, 0.2), new THREE.MeshStandardMaterial({ color: 0x151515, metalness: 0.7, roughness: 0.4 }));
-  const gw = new THREE.Group(); gw.add(g); g.position.y = -0.085; g.rotation.x = -Math.PI / 2; // barrel along the aim line // grip centred in the palm
+  const gw = new THREE.Group(); gw.add(g); g.position.y = 0.10; g.rotation.x = -Math.PI / 2; // barrel along the aim line // grip centred in the palm
   if (hand) { hand.getWorldScale(ws); gw.scale.setScalar(1 / ws.x); hand.add(gw); }
-  gunMesh = gw; gw.visible = false;
+  scene.add(gw); gw.scale.setScalar(1); gunMesh = gw; gw.visible = false;
   const st = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.002, 0.14, 4), new THREE.MeshStandardMaterial({ color: 0xe8dcc0, roughness: 0.5 }));
   const lh = heroC.bones.LeftHand; if (lh) { const ws2 = new THREE.Vector3(); lh.getWorldScale(ws2); const sw = new THREE.Group(); sw.scale.setScalar(1 / ws2.x); sw.add(st); st.rotation.z = 1.2; st.position.set(0.02, -0.04, 0); lh.add(sw); strandMesh = st; }
   st.visible = false;
@@ -140,7 +141,13 @@ if (heroC?.ok) {
 // melee weapon held in the right hand (same frame as the pistol: blade along the aim line)
 const meleeHolder = new THREE.Group(); const meleeModels = {};
 { const hand = heroC?.ok && heroC.bones.RightHand; if (hand) { const ws = new THREE.Vector3(); hand.getWorldScale(ws); meleeHolder.scale.setScalar(1 / ws.x); hand.add(meleeHolder); } else hero.elbowR.add(meleeHolder); }
+if (heroC?.ok) { scene.add(meleeHolder); meleeHolder.scale.setScalar(1); }
 for (const id of Object.keys(MELEE)) { const m = buildMelee(id); m.rotation.x = -Math.PI / 2; m.position.y = -0.02; m.visible = false; meleeHolder.add(m); meleeModels[id] = m; }
+const heldItems = {};
+for (const id of ['knife','bottle','brick','molotov','kit']) {
+  const m = buildItem(id); m.rotation.x = -Math.PI / 2; m.position.y = -0.04;
+  m.visible = false; meleeHolder.add(m); heldItems[id] = m;
+}
 const carryMesh = new THREE.Group(); scene.add(carryMesh); // plank while carried
 const P = {
   pos: new THREE.Vector3(), vel: new THREE.Vector3(), yaw: Math.PI / 2, crouch: false, crouchK: 0, moving: false, speed: 0,
@@ -148,11 +155,13 @@ const P = {
   stamina: 1, dodgeT: 0, dodgeCool: 0, dodgeDir: new THREE.Vector3(), lockT: 0, aim: false, aimK: 0, reloadT: 0, healT: 0, craftT: 0, craftWhat: null,
   strikeT: 0, recoil: 0, fireCool: 0, iframe: 0, stepDist: 0, listen: false, struggle: null, flinch: 0, breathT: 0, lastFire: -9, pickT: 0, carry: null, anim: null, packOpen: false, throwPref: 'bottle', magSize: 6, upgrades: [],
 };
+let shotPose = 0;
 let camYaw = Math.PI / 2, camPitch = -0.08, shoulder = 1, fovK = 0, shakeT = 0, shakeAmp = 0, camDist = 2.2, stepPhase = 0;
 const camPivot = new THREE.Vector3(), camFwd = new THREE.Vector3(), flashDir = new THREE.Vector3(1, 0, 0);
 const W = { scene, camera, player: P, audio, fx, enemies: [], flags: {}, camFwd, playerFacing: new THREE.Vector3(1, 0, 0), time: 0, flashlightOn: false, registerEnv };
 const enemies = W.enemies;
 const flags = W.flags;
+let tutorial = null;
 let mode = 'title', saved = null, gen = 0, taken = new Set(), projectiles = [], fires = [], curArea = null, objT = 0, invT = 0, thunderT = 12, ambT = 8, endT = 0, genT = 0;
 const later = (sec, fn) => { const g = gen; setTimeout(() => { if (g === gen) fn(); }, sec * 1000); };
 let paused = false, slot = null, playT = 0, uiClosedAt = 0, titleReady = false, trailerThen = false, notesFound = new Set();
@@ -215,10 +224,12 @@ let hudT = 0;
 function updateHUD(dt) {
   const hp = $('hp').firstElementChild; hp.style.width = P.hp + '%'; hp.style.background = P.hp < 35 ? '#c04030' : '#d8d2c0';
   const w = P.weapon;
-  const md = P.melee ? `<em>${MELEE[P.melee.id].name.toUpperCase()} ${'▮'.repeat(Math.max(0, P.melee.dur))}${'▯'.repeat(Math.max(0, MELEE[P.melee.id].dur - P.melee.dur))}</em>` : '';
-  $('weapon').innerHTML = md + (w === 'pistol' ? `<b>${P.ammo}</b> <span>/ ${P.spare}</span><i>PISTOL</i>` : w === 'molotov' ? `<b>${P.items.molotov}</b><i>MOLOTOV</i>` : `<b>${P.items[throwKind()] || 0}</b><i>${throwKind().toUpperCase()}</i>`);
-  $('weapon').style.opacity = (P.aimK > 0.2 || P.reloadT > 0 || W.time - P.lastFire < 2 || P.packOpen || invT > 0) ? 0.95 : 0.25;
-  $('cross').style.opacity = P.aimK > 0.7 && w === 'pistol' ? 0.8 : 0;
+  const md = P.weapon === 'melee' && P.melee ? `<em>${MELEE[P.melee.id].name.toUpperCase()} ${'▮'.repeat(Math.max(0, P.melee.dur))}${'▯'.repeat(Math.max(0, MELEE[P.melee.id].dur - P.melee.dur))}</em>` : '';
+  const heldName = w === 'none' ? 'EMPTY HANDS' : w === 'melee' ? (P.melee ? MELEE[P.melee.id].name.toUpperCase() : 'POCKET KNIFE') : w === 'throw' ? throwKind().toUpperCase() : w.toUpperCase();
+  const count = w === 'pistol' ? `${P.ammo} loaded · ${P.spare} spare` : w === 'molotov' ? `${P.items.molotov} carried` : w === 'throw' ? `${P.items[throwKind()] || 0} carried` : w === 'melee' ? P.melee ? `${P.melee.dur} condition` : 'Reusable' : 'Select from Tab';
+  $('weapon').innerHTML = `<i>IN HAND · ${heldName}</i><b style="font-size:18px">${count}</b><em>${w === 'none' ? 'Empty hands' : '1 item held'} · ${P.items.kit} health kit${P.items.kit===1?'':'s'}</em>` + (w === 'pistol' ? '<em>CLICK / ENTER shoot · RIGHT CLICK / Z aim · R reload</em>' : w === 'none' ? '<em>TAB select an item</em>' : w === 'melee' ? '<em>CLICK / F strike · TAB change item</em>' : '<em>CLICK / G throw · TAB change item</em>');
+  $('weapon').style.opacity = ui.open ? 0.35 : 0.9;
+  $('cross').style.opacity = w === 'pistol' && !ui.open ? (P.aimK > 0.7 ? 0.8 : 0.35) : 0;
   objT -= dt; if (objT < 0 && mode === 'play') $('objective').style.opacity = 0.55;
   invT -= dt;
   grade.uniforms.hurt.value = damp(grade.uniforms.hurt.value, P.dead ? 0 : clamp((45 - P.hp) / 45, 0, 0.8), 3, dt);
@@ -278,6 +289,7 @@ ui = createUI({
   startCraft, reload, dropMelee: () => { if (P.melee) dropMelee(); }, equip: equipItem,
   useKit: () => { if (P.items.kit > 0 && P.hp < 100 && P.healT <= 0) { heal(); return true; } toast(P.items.kit ? 'Already at full health' : 'No health kit'); return false; },
   openMap: () => openMap(), openPackFromMenu: () => openPack(),
+  onTutorial: () => startPractice(),
   onPackClosed: () => { P.packOpen = false; uiClosedAt = performance.now(); relock(); },
   onMapClosed: () => { setPaused(false); uiClosedAt = performance.now(); relock(); },
   onPause: (on) => { setPaused(on); if (!on) { uiClosedAt = performance.now(); relock(); } },
@@ -289,15 +301,29 @@ ui = createUI({
   get creditsHTML() { return credits(); },
 });
 function equipItem(k) {
+  const meleeKey = k === 'knife' || (P.melee && k === P.melee.id);
+  const alreadyHeld = meleeKey ? P.weapon === 'melee' : k === 'bottle' || k === 'brick' ? P.weapon === 'throw' && throwKind() === k : P.weapon === k;
+  if (alreadyHeld) { P.weapon = 'none'; toast('Item stowed · empty hands'); showInv(); return true; }
   if (k === 'pistol') P.weapon = 'pistol';
-  else if (k === 'bottle' || k === 'brick') { if (P.items[k] > 0) { P.weapon = 'throw'; P.throwPref = k; } else { toast(`No ${k}s`); return; } }
-  else if (k === 'molotov') { if (P.items.molotov > 0) P.weapon = 'molotov'; else { toast('No molotov — craft one'); return; } }
-  showInv(); audio.uiTick?.();
+  else if (meleeKey) P.weapon = 'melee';
+  else if (k === 'bottle' || k === 'brick') { if (P.items[k] <= 0) { toast(`No ${k}s`); return false; } P.weapon = 'throw'; P.throwPref = k; }
+  else if (k === 'molotov') { if (!P.items.molotov) { toast('No molotov — craft one'); return false; } P.weapon = 'molotov'; }
+  else return false;
+  toast(`${ITEMS[k]?.name || k} in hand`); showInv(); audio.uiConfirm?.();
+  if(k === 'pistol') tutorial?.signal('equip');
+  return true;
+}
+function useHeld() {
+  if(P.healT > 0 || P.craftT > 0 || P.packOpen) return;
+  if(P.weapon === 'pistol') fire();
+  else if(P.weapon === 'throw' || P.weapon === 'molotov') throwItem(P.weapon);
+  else if(P.weapon === 'melee') melee();
+  else toast('Empty hands · Tab to select an item');
 }
 function setPaused(on) { paused = on; if (audio.ok) audio.master.gain.setTargetAtTime(settings.master / 10 * (on ? 0.35 : 1), audio.ctx.currentTime, 0.08); }
 function relock() { if (mode === 'play' && !ui.open && !P.dead) cv.requestPointerLock?.()?.catch?.(() => {}); }
 function openPause() { if (ui.open || mode !== 'play' || P.dead) return; keys.clear(); mouseDown = [false, false, false]; setPaused(true); ui.openPause(); document.exitPointerLock?.(); }
-function openPack() { if (ui.open || mode !== 'play' || P.dead || P.struggle) return; keys.clear(); P.aim = false; P.packOpen = true; ui.openPack(); document.exitPointerLock?.(); }
+function openPack() { if (ui.open || mode !== 'play' || P.dead || P.struggle) return; keys.clear(); P.aim = false; P.packOpen = true; tutorial?.signal('pack'); ui.openPack(); document.exitPointerLock?.(); }
 function openMap() { if (ui.open || mode !== 'play' || P.dead) return; keys.clear(); setPaused(true); ui.openMap('game'); document.exitPointerLock?.(); }
 
 // ------------------------------------------------------------------ input
@@ -314,11 +340,13 @@ addEventListener('keydown', e => {
     case 'Escape': case 'KeyP': openPause(); break;
     case 'Tab': case 'KeyI': openPack(); break;
     case 'KeyM': openMap(); break;
-    case 'Enter': case 'NumpadEnter': if (P.aim) { if (P.weapon === 'pistol') fire(); else throwItem(P.weapon); } else interact(); break;
-    case 'Digit1': P.weapon = 'pistol'; showInv(); break;
+    case 'Enter': case 'NumpadEnter': useHeld(); break;
+    case 'KeyT': if(tutorial?.active) tutorial.leave(); break;
+    case 'Digit1': if(P.weapon !== 'pistol')equipItem('pistol'); break;
+    case 'Digit4': if(P.weapon !== 'melee')equipItem(P.melee?.id || 'knife'); break;
     case 'Digit2': if (P.items.bottle + P.items.brick) P.weapon = 'throw'; else toast('No bottles or bricks'); showInv(); break;
     case 'Digit3': if (P.items.molotov) P.weapon = 'molotov'; else toast('No molotov — craft one (Tab)'); showInv(); break;
-    case 'KeyC': P.crouch = !P.crouch; break;
+    case 'KeyC': P.crouch = !P.crouch; if(P.crouch)tutorial?.signal('crouch'); break;
     case 'KeyF': melee(); break;
     case 'KeyG': throwItem(P.weapon === 'molotov' ? 'molotov' : 'throw'); break;
     case 'KeyR': reload(); break;
@@ -338,7 +366,7 @@ cv.addEventListener('mousedown', e => {
   mouseDown[e.button] = true;
   if (mode === 'play' && !locked && e.button === 0 && !P.aim && !ui.open) cv.requestPointerLock?.()?.catch?.(() => {});
   if (mode !== 'play' || P.dead || paused || ui.open) return;
-  if (e.button === 0) { if (P.aim) { if (P.weapon === 'pistol') fire(); else throwItem(P.weapon); } else melee(); }
+  if (e.button === 0) useHeld();
 });
 addEventListener('mouseup', e => mouseDown[e.button] = false);
 document.addEventListener('pointerlockchange', () => {
@@ -379,6 +407,7 @@ function emitSound(x, z, r, kind, player) {
 }
 W.onAttack = (e) => {
   if (P.dead || P.struggle || flags.ending) return;
+  if(tutorial?.active) { P.hp=Math.max(50,P.hp-10);audio.hurt();fx.blood(P.pos.clone().setY(1.2));e.stagger=1.5;e.atkCool=4;return; }
   if (P.iframe > 0) { e.stagger = 0.7; return; }
   if (ui.open === 'pack') ui.closePack();
   const mw = P.melee && MELEE[P.melee.id];
@@ -395,13 +424,14 @@ W.onAttack = (e) => {
   P.struggle = { e, t: settings.difficulty === 'easy' ? 3.6 : settings.difficulty === 'hard' ? 1.8 : 2.4, n: 0, need: P.melee ? 4 : 7 }; audio.scream(e.headPos, e.type, 1); shake(0.25, 0.5); emitSound(P.pos.x, P.pos.z, 7, 'struggle', true);
 };
 W.onEngage = () => { if (W.time - (W.lastSting ?? -99) > 9) { W.lastSting = W.time; audio.sting('sting_detect', 0.75); } };
-W.onEnemyDeath = (e) => { fx.blood(e.pos.clone().setY(1.2)); stats.kills++; };
+W.onEnemyDeath = (e) => { fx.blood(e.pos.clone().setY(1.2)); stats.kills++; if(e.id === 'practice-infected')tutorial?.signal('enemy'); };
 
 // ------------------------------------------------------------------ actions
 function animOnce(name, t) { P.anim = { name, t }; }
 function fire() {
   if (P.fireCool > 0 || P.reloadT > 0 || P.struggle || P.lockT > 0 || P.carry) return;
   if (P.ammo <= 0) { audio.dryfire(); toast(P.spare ? 'R — reload' : 'Out of ammo'); P.fireCool = 0.3; return; }
+  tutorial?.signal('fire'); shotPose = 0.6;
   P.ammo--; P.fireCool = 0.5; P.recoil = 1; P.lastFire = W.time; camPitch = clamp(camPitch + 0.045, -1.1, 0.85); camYaw += (Math.random() - 0.5) * 0.02; shake(0.08, 0.15);
   const gp = gunMesh.getWorldPosition(new THREE.Vector3()).addScaledVector(camFwd, 0.18); muzzle.position.copy(gp); muzzle.intensity = 30; setTimeout(() => muzzle.intensity = 0, 55);
   fx.sparks(gp); audio.gunshot(P.pos.clone().setY(1.4)); audio.casing(P.pos); emitSound(P.pos.x, P.pos.z, 34, 'gun', true);
@@ -538,7 +568,7 @@ function updateFires(dt) {
     if (f.t <= 0) { scene.remove(f.light); fires.splice(i, 1); }
   }
 }
-function heal() { if (P.items.kit <= 0) { toast('No health kit'); return; } if (P.hp >= 100 || P.healT > 0) return; P.healT = 2.2; audio.pickup(); }
+function heal() { if (P.items.kit <= 0) { toast('No health kit'); return; } if (P.hp >= 100 || P.healT > 0) return; P.healT = 2.2; P.aim=false; audio.pickup();toast('Applying antiseptic and wrapping · 2.2 seconds'); }
 function startCraft(r) {
   if (!r || P.craftT > 0 || P.struggle) return;
   if (!canCraft(r)) { toast(P.items[r.id] >= r.max ? `Can't carry more ${NAME[r.id].toLowerCase()}s` : `Missing materials for ${NAME[r.id].toLowerCase()}`); return; }
@@ -575,6 +605,7 @@ function nearbyInteract() {
   return best;
 }
 function interact() {
+  if(tutorial?.active) {toast('Practice first · T begins the story');return;}
   const it = nearbyInteract(); if (!it || P.lockT > 0) return;
   if (it.kind === 'door') { if (it.d.locked) { audio.thud(P.pos); return; } openDoor(it.d, true); }
   else if (it.kind === 'pickup') {
@@ -729,6 +760,7 @@ function snapshot(name) { // plain JSON: ids instead of live objects, so it fits
     plank: { pos: world.plank.position.toArray(), rotY: world.plank.rotation.y, carried: P.carry === 'plank' }, map: mapApi.save(), notes: [...notesFound], stats: { ...stats } };
 }
 function checkpoint(name) {
+  if(tutorial?.active)return;
   saved = snapshot(name);
   if (slot) { slot.snap = saved; slot.checkpoint = saved.label; slot.area = AREA_NAME[curArea?.id] || saved.label; slot.progress = progressPct(); slot.playtime = playT; S.upsertSlot(slot); if (mode === 'play' && name !== 'start') ui.flashSave(); }
 }
@@ -770,6 +802,7 @@ function die(cause = 'default') {
 }
 function onRetry() { fade(1, 0.3); setTimeout(() => { restoreSnap(saved); mode = 'play'; fade(0, 0.9); showStageObjective(); relock(); }, 350); }
 function startNew(carry) {
+  tutorial?.stop();
   W.cycle = slot?.cycle || 0; restoreSnap(initialSnap, true);
   if (carry?.melee) P.melee = { id: carry.melee.id, dur: MELEE[carry.melee.id].dur };
   if (carry?.upgrades) P.upgrades = [...carry.upgrades];
@@ -781,6 +814,7 @@ function startNew(carry) {
 }
 function onNewGame() { slot = S.newSlot(); if (!S.getMeta().trailerSeen) playTrailer(true); else startNew(); }
 function onContinue(sl) {
+  tutorial?.stop();
   slot = sl; S.setMeta({ lastSlot: sl.id }); W.cycle = sl.cycle || 0;
   restoreSnap(sl.snap || initialSnap, true); playT = sl.playtime || 0; mode = 'play';
   fade(1, 0); requestAnimationFrame(() => fade(0, 1.6)); showStageObjective(); relock();
@@ -792,6 +826,7 @@ function onNewStoryPlus(sl) {
 }
 function markComplete() { if (!slot) return; slot.completed = true; slot.progress = 100; slot.playtime = playT; slot.final = { melee: P.melee ? { ...P.melee } : null, upgrades: [...P.upgrades] }; S.upsertSlot(slot); S.setMeta({ completedAny: true }); }
 function toTitle(view = 'main') {
+  tutorial?.stop();
   if (slot && (mode === 'play' || mode === 'ending')) { slot.playtime = playT; S.upsertSlot(slot); }
   document.exitPointerLock?.(); P.packOpen = false; ui.guide(false); fade(1, 0.35);
   setTimeout(() => { mode = 'title'; paused = false; gen++; audio.stopEngine?.(); setPaused(false);
@@ -814,7 +849,8 @@ function update(dt) {
   playT += dt;
   if (settings.keyLook && !P.dead) { const ks = 2.1 * (settings.sens / 5) * (P.aimK > 0.5 ? 0.5 : 1); if (keys.has('ArrowLeft')) camYaw += ks * dt; if (keys.has('ArrowRight')) camYaw -= ks * dt; const ps = ks * 0.6 * (settings.invertY ? -1 : 1); if (keys.has('ArrowUp')) camPitch = clamp(camPitch + ps * dt, -1.1, 0.85); if (keys.has('ArrowDown')) camPitch = clamp(camPitch - ps * dt, -1.1, 0.85); }
   if (flags.escape && !flags.pastTear && L.cellOf(P.pos.x, P.pos.z)[0] <= 36) { flags.pastTear = true; objective('GET OUT', 'Follow the red lights west to the EXIT door'); }
-  mapApi.reveal(P.pos.x, P.pos.z, dt); updateGuide(dt);
+  mapApi.reveal(P.pos.x, P.pos.z, dt); if(!tutorial?.active)updateGuide(dt);
+  tutorial?.update(dt,P); shotPose=Math.max(0,shotPose-dt);
   if (P.anim) { P.anim.t -= dt; if (P.anim.t <= 0) P.anim = null; }
   if (P.riposte) { P.riposte.t -= dt; if (P.riposte.t <= 0) P.riposte = null; }
   // bleeding infected (machete): blood trail, then the wound finishes them
@@ -823,12 +859,12 @@ function update(dt) {
   if (P.hp < 35 && !P.dead) { P.hbT = (P.hbT ?? 0) - dt; if (P.hbT <= 0) { P.hbT = 0.75 + P.hp / 60; audio.heartbeat(0.55); } }
   if (P.listen) { P.brT = (P.brT ?? 0) - dt; if (P.brT <= 0 && enemies.some(e => e.alive && e.type === 'lurker' && e.pos.distanceTo(P.pos) < 9)) { P.brT = 6; audio.sting('breath_hiding', 0.55); } }
   P.recoil *= Math.exp(-dt * 10); P.flinch = Math.max(0, P.flinch - dt * 1.4);
-  if (P.strikeT <= 0) hero.extras.knife.visible = false;
+  hero.extras.knife.visible = false; // the shared hand-mounted knife is the visible item
   if (P.reloadT > 0) { P.reloadT -= dt; if (P.reloadT <= 0) { const n = Math.min(P.magSize - P.ammo, P.spare); P.ammo += n; P.spare -= n; } }
   if (P.healT > 0) { P.healT -= dt; if (P.healT <= 0) { P.items.kit--; P.hp = Math.min(100, P.hp + 50); toast('Patched up'); showInv(); } }
   if (P.craftT > 0) { P.craftT -= dt; if (P.craftT <= 0) { const r = RECIPES.find(x => x.id === P.craftWhat); if (r?.id === 'repair' && canCraft(r)) { P.items.binding--; P.melee.dur = Math.min(MELEE[P.melee.id].dur, P.melee.dur + 3); audio.sample('belt', null, 0.8); toast('Wrapped and reinforced'); } else if (r && canCraft(r)) { for (const [k, n] of Object.entries(r.need)) P.items[k] -= n; P.items[r.id]++; toast(`Crafted ${NAME[r.id].toLowerCase()}`); showInv(); if (r.id === 'molotov') P.weapon = 'molotov'; } P.craftWhat = null; hudT = 0; } }
   P.listen = keys.has('KeyQ') && !P.dead && !P.struggle;
-  P.aim = (mouseDown[2] || keys.has('KeyZ')) && !P.dead && !P.struggle && P.lockT <= 0 && P.healT <= 0 && !P.carry;
+  P.aim = (mouseDown[2] || keys.has('KeyZ') || shotPose > 0) && !P.dead && !P.struggle && P.lockT <= 0 && P.healT <= 0 && !P.carry;
   P.aimK = lerp(P.aimK, P.aim ? 1 : 0, Math.min(1, dt * 10));
   // generator: engine keeps pulsing sound events while the shutter rolls up
   if (genT > 0) { genT -= dt; const gc = L.center(L.GENERATOR.x, L.GENERATOR.z); if (Math.floor(genT * 0.66) !== Math.floor((genT + dt) * 0.66)) emitSound(gc.x, gc.z, 18, 'generator', false);
@@ -880,7 +916,8 @@ function update(dt) {
   }
   if (canRun || P.stamina < 0.35) { P.breathT -= dt; if (P.breathT <= 0 && P.stamina < 0.6) { P.breathT = 0.9 + P.stamina; audio.breath(0.35 * (1 - P.stamina)); } }
   // area changes
-  const a = L.areaAt(P.pos.x, P.pos.z); if (a !== curArea) { curArea = a; onEnterArea(a.id); }
+  if(tutorial?.active){P.pos.x=clamp(P.pos.x,1,21);P.pos.z=clamp(P.pos.z,1,27);}
+  const a = L.areaAt(P.pos.x, P.pos.z); if (!tutorial?.active && a !== curArea) { curArea = a; onEnterArea(a.id); }
   if (flags.escape) { escapeSetpieces(); if (a.id === 'outside' && P.pos.x < 26 && !flags.ending) startEnding(); }
   // corridor dread
   const [pcx, pcz] = L.cellOf(P.pos.x, P.pos.z);
@@ -915,10 +952,12 @@ function update(dt) {
 
 function animatePlayer(dt, canRun, crouching) {
   carryMesh.position.copy(P.pos); carryMesh.rotation.y = P.yaw;
-  gunMesh.visible = (P.aimK > 0.3 && P.weapon === 'pistol') || P.reloadT > 0;
-  const showMelee = P.melee && !gunMesh.visible && !P.carry && !(P.aimK > 0.3);
-  for (const [id, m] of Object.entries(meleeModels)) m.visible = !!showMelee && P.melee.id === id;
-  meleeHolder.visible = !!showMelee;
+  const usable = !P.dead && !P.packOpen && !P.carry && P.craftT <= 0;
+  gunMesh.visible = usable && P.healT <= 0 && P.weapon === 'pistol';
+  const showMelee = usable && P.healT <= 0 && P.weapon === 'melee';
+  for (const [id,m] of Object.entries(meleeModels)) m.visible = !!showMelee && P.melee?.id === id;
+  for (const [id,m] of Object.entries(heldItems)) m.visible = usable && (P.healT > 0 ? id === 'kit' : id === 'knife' ? showMelee && !P.melee : id === 'kit' ? false : id === (P.weapon === 'throw' ? throwKind() : P.weapon));
+  meleeHolder.visible = usable && !gunMesh.visible;
   if (heroC?.ok) {
     heroC.root.position.copy(P.pos); heroC.root.rotation.y = P.yaw;
     let clip = 'idle', sp = 1, once = false;
@@ -933,6 +972,18 @@ function animatePlayer(dt, canRun, crouching) {
     heroC.play(clip, { once, fade: clip === 'death' ? 0.15 : 0.22 });
     if (!once) { if (clip === 'aim' && sp === 0) { const a = heroC.actions.aim; if (a) { a.time = a.getClip().duration * 0.3; a.timeScale = 0; } } else heroC.speed(clamp(sp, 0.45, 1.7)); }
     heroC.update(dt);
+    // Animated rigs can change bone scale. Keep real item dimensions independent of it.
+    heroC.root.updateMatrixWorld(true);
+    const itemHand = heroC.bones.RightHand;
+    if (itemHand) {
+      itemHand.getWorldPosition(gunMesh.position); itemHand.getWorldQuaternion(gunMesh.quaternion);
+      meleeHolder.position.copy(gunMesh.position); meleeHolder.quaternion.copy(gunMesh.quaternion);
+    }
+    if(P.healT > 0) {
+      const k=1-P.healT/2.2, b=heroC.bones.RightHand;
+      if(b) b.rotation.z += Math.sin(k*Math.PI*6)*0.16;
+      heldItems.kit.rotation.z=Math.sin(k*Math.PI*6)*0.12;
+    } else heldItems.kit.rotation.z=0;
     return;
   }
   hero.root.position.copy(P.pos); hero.root.rotation.y = P.yaw;
@@ -1015,6 +1066,22 @@ function loop() {
   composer.render(dt);
 }
 { const c = L.center(L.START.x, L.START.z); P.pos.set(c.x, 0, c.z); camPivot.set(c.x, 1.5, c.z); (heroC?.root || hero.root).position.copy(P.pos); (heroC?.root || hero.root).rotation.y = P.yaw; camera.position.set(c.x - 1.8, 1.6, c.z + 0.6); camera.lookAt(c.x + 5, 1.4, c.z); curArea = L.areaAt(c.x, c.z); }
+function startPractice() {
+  slot=null;restoreSnap(initialSnap,true);mode='play';playT=0;keys.clear();mouseDown=[false,false,false];
+  for(const e of enemies)e.dispose();enemies.length=0;
+  P.weapon='none';P.ammo=6;P.spare=24;P.items.kit=2;P.items.bottle=2;P.hp=100;
+  tutorial.start();$('objective').style.opacity=0;ui.guide(false);fade(0,0.5);relock();
+}
+tutorial = new PracticeGuide({
+ show: data => {
+  let box=$('practiceGuide');if(!box){box=document.createElement('div');box.id='practiceGuide';box.style.cssText='position:fixed;left:30px;top:26px;max-width:410px;padding:16px 20px;background:rgba(15,20,18,.88);border-left:2px solid #d9c8a2;color:#eee4cc;font:14px/1.6 Helvetica;pointer-events:none;z-index:8';document.body.appendChild(box);}
+  box.hidden=!data;if(data)box.innerHTML=`<small>PRACTICE ${data.index} / ${data.total} · T skip to story</small><h3 style="margin:6px 0">${data.title}</h3><div>${data.body}</div>`;
+ },
+ spawn: () => { const e=new Enemy({id:'practice-infected',type:'frenzied',x:8,z:7,yaw:-Math.PI/2},W);e.hp=2;e.cfg={...e.cfg,walk:0.6,run:1.1};enemies.push(e);registerEnv(e.h.root);P.ammo=6;P.spare=24; },
+ prepareHeal: () => {P.hp=60;P.items.kit=Math.max(1,P.items.kit);toast('Practice injury · H applies antiseptic and a wrap');},
+ healed: () => P.hp>=99 && P.healT<=0,
+ finish: () => onNewGame(),
+});
 const initialSnap = snapshot('start'); initialSnap.enemies = L.ENEMIES.map(d => d.id); initialSnap.hp = 100; initialSnap.yaw = Math.PI / 2; initialSnap.flash = false; initialSnap.map = null; initialSnap.notes = []; initialSnap.stats = { kills: 0, deaths: 0 };
 loop();
 

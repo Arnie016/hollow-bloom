@@ -177,7 +177,7 @@ export function createUI(ctx) {
     const rows = [
       { label: 'Weapons', s: [
         { k: 'pistol', n: `${P.ammo}<small>/${P.spare}</small>`, eq: P.weapon === 'pistol', act: 'equip' },
-        { k: mel, n: P.melee ? '' : '∞', bar: P.melee ? P.melee.dur / M[P.melee.id].dur : null, eq: true, act: P.melee ? 'drop' : null },
+        { k: mel, n: P.melee ? '' : '∞', bar: P.melee ? P.melee.dur / M[P.melee.id].dur : null, eq: P.weapon === 'melee', act: 'equip' },
         { k: 'bottle', n: it.bottle, eq: P.weapon === 'throw' && (P.throwPref || 'bottle') === 'bottle', act: 'equip' },
         { k: 'brick', n: it.brick, eq: P.weapon === 'throw' && P.throwPref === 'brick', act: 'equip' },
         { k: 'molotov', n: it.molotov, eq: P.weapon === 'molotov', act: 'equip' },
@@ -231,11 +231,11 @@ export function createUI(ctx) {
     if (s.k === 'pistol') stats = `<div class="stats"><span>LOADED</span><span>${P.ammo} / ${P.magSize || 6}</span><span>SPARE</span><span>${P.spare}</span><span>UPGRADES</span><span>${(P.upgrades || []).map(u => u.replace(/_/g, ' ')).join(', ') || 'none'}</span></div>`;
     const actions = { equip: 'EQUIP', use: 'USE', reload: 'RELOAD', drop: 'DROP', read: 'READ', map: 'OPEN MAP' };
     const can = s.act && !(s.n === 0 && (s.act === 'equip' || s.act === 'use' || s.act === 'reload'));
-    const acts = s.act ? `<span class="${can ? '' : 'dim'}"><span class="kc">${s.act === 'drop' ? 'X' : 'ENTER'}</span>${actions[s.act]}</span>` : '';
+    const acts = s.act === 'equip' ? `<span><span class="kc">CLICK / ENTER</span>${s.eq ? 'STOW' : 'HOLD'}${ctx.P.melee?.id === s.k ? ' · X DROP' : ''}</span>` : s.act ? `<span class="${can ? '' : 'dim'}"><span class="kc">${s.act === 'drop' ? 'X' : 'ENTER'}</span>${actions[s.act]}</span>` : '';
     return `<img class="big" src="${icon(s.k)}"><div><span class="tape">${meta.name}</span><div class="cat">${meta.cat}${typeof s.n === 'number' ? ' · ' + s.n + ' carried' : ''}</div><p class="desc">${meta.desc}</p>${stats}<div class="acts">${acts}</div></div>`;
   }
   function buildPack() {
-    $('packScr').innerHTML = `<div class="shade"></div><div class="bag"><div class="head"><h2>WREN'S PACK</h2><span class="hint"><span class="kc">←↑↓→</span>↑↓ category · ←→ item <span class="kc">ENTER</span>use <span class="kc">TAB</span>close</span></div><div class="body"><div class="rows"></div><div class="det"></div><div class="foot"><span class="hp"></span><span class="obj"></span></div></div></div>`;
+    $('packScr').innerHTML = `<div class="shade"></div><div class="bag"><div class="head"><h2>WREN'S PACK</h2><span class="hint"><span class="kc">←↑↓→</span>↑↓ category · ←→ item <span class="kc">ENTER</span>use <span class="kc">TAB</span>close</span></div><div class="body"><div class="rows"></div><div class="det"></div><div class="foot"><span class="hp"></span><span>ONE ITEM IN HAND · CLICK TO HOLD / STOW</span><span class="obj"></span></div></div></div>`;
     refreshRows();
   }
   function refreshRows() {
@@ -267,9 +267,9 @@ export function createUI(ctx) {
   function packAction(kind) {
     const s = pack.rows[pack.r]?.s[pack.c]; if (!s) return;
     if (s.recipe) { if (kind === 'enter') ctx.startCraft(s.recipe); }
-    else if (kind === 'drop' && s.act === 'drop') ctx.dropMelee();
+    else if (kind === 'drop' && ctx.P.melee && s.k === ctx.P.melee.id) ctx.dropMelee();
     else if (kind === 'enter') {
-      if (s.act === 'equip') ctx.equip(s.k);
+      if (s.act === 'equip') { if(ctx.equip(s.k))closePack(); return; }
       else if (s.act === 'use') { if (ctx.useKit()) { closePack(); return; } }
       else if (s.act === 'reload') ctx.reload();
       else if (s.act === 'read') { openNotes('pack'); return; }
@@ -382,7 +382,7 @@ export function createUI(ctx) {
     if (last && last.completed) items.push(['ngplus', 'New Story+', `Replay ${last.name} with your weapons — new notes, harder infected, and a friend who walked this way before you.`]);
     items.push(['new', '+ New Game', last ? 'Start a fresh save. Your other games stay.' : 'Rain. A pharmacy. Something growing inside.']);
     if (slots.length) items.push(['load', 'Load Game', `${slots.length} save${slots.length > 1 ? 's' : ''}`]);
-    items.push(['settings', 'Settings', ''], ['controls', 'Controls', ''], ['trailer', 'Watch Trailer', ''], ['credits', 'Credits', '']);
+    items.push(['tutorial', 'Practice / Tutorial', 'Learn to hold items, move, shoot and heal. One safe practice infected.'], ['settings', 'Settings', ''], ['controls', 'Controls', ''], ['trailer', 'Watch Trailer', ''], ['credits', 'Credits', '']);
     return { items, slots, last };
   }
   function renderTitle() {
@@ -403,11 +403,12 @@ export function createUI(ctx) {
       t.innerHTML = `<div class="sethead" style="margin-left:0">CREDITS</div><p class="sub" style="line-height:2.2;letter-spacing:.18em;opacity:.7">${ctx.creditsHTML}</p><div class="foothint"><span class="kc">ESC</span>back</div>`;
     }
   }
-  const CONTROLS = [['WASD', 'move'], ['ARROW KEYS', 'look around (no mouse needed)'], ['SHIFT', 'run'], ['C', 'crouch — quiet'], ['Z / RIGHT MOUSE', 'aim'], ['LEFT MOUSE / ENTER (aiming)', 'fire · throw'], ['F', 'melee · takedown · struggle'], ['G', 'throw bottle / brick'], ['R', 'reload'], ['H', 'use health kit'], ['TAB', 'backpack — arrows + Enter'], ['M', 'map'], ['1 / 2 / 3', 'pistol · throwable · molotov'], ['SPACE', 'dodge'], ['E', 'interact / pick up'], ['HOLD Q', 'listen'], ['L', 'flashlight'], ['X', 'swap shoulder'], ['ESC / P', 'pause']];
+  const CONTROLS = [['WASD', 'move'], ['ARROW KEYS', 'look around (no mouse needed)'], ['SHIFT', 'run'], ['C', 'crouch — quiet'], ['Z / RIGHT MOUSE', 'aim'], ['LEFT MOUSE / ENTER', 'use held item — shoot, throw or strike'], ['T (practice)', 'leave practice and begin story'], ['F', 'melee · takedown · struggle'], ['G', 'throw bottle / brick'], ['R', 'reload'], ['H', 'use health kit'], ['TAB', 'backpack — arrows + Enter'], ['M', 'map'], ['1 / 2 / 3 / 4', 'pistol · throwable · molotov · melee'], ['SPACE', 'dodge'], ['E', 'interact / pick up'], ['HOLD Q', 'listen'], ['L', 'flashlight'], ['X', 'swap shoulder'], ['ESC / P', 'pause']];
   function leaveTitle() { U.open = null; $('title').style.display = 'none'; }
   function titlePick() {
     const { items, last } = titleItems(); const a = items[title.i]?.[0]; confirm();
     if (a === 'continue') { leaveTitle(); ctx.onContinue(last); }
+    else if (a === 'tutorial') { leaveTitle(); ctx.onTutorial(); }
     else if (a === 'new') { leaveTitle(); ctx.onNewGame(); }
     else if (a === 'load') { title.view = 'load'; title.li = 0; renderTitle(); }
     else if (a === 'settings') { $('title').style.display = 'none'; openSettings('title'); }
