@@ -277,6 +277,7 @@ AudioSys.prototype.click = function (pos, n = 3, vol = 1) {
 
 // ------------------------------------------------------------ interface sounds (backpack, menus, notes)
 Object.assign(AudioSys.prototype, {
+  uiConfirm() { if (!this.ok) return; const o = this.out(null, 0.32); this.burst(o, {dur: 0.04, type: 'lowpass', f: 1800, gain: 0.18}); this.tone(o, {f: 660, f2: 440, dur: 0.065, gain: 0.12}); },
   uiTick() { if (!this.ok) return; const o = this.out(null, 0.22); this.tone(o, { f: 1650, dur: 0.022, gain: 0.07 }); this.burst(o, { dur: 0.018, type: 'highpass', f: 4200, gain: 0.12 }); },
   zip() { // canvas flap + zipper run
     if (!this.ok) return; this.sample('cloth', null, 0.55); this.sample('belt', null, 0.35, { t: 0.05 });

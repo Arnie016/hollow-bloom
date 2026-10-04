@@ -77,6 +77,9 @@ const CSS = (fab, fabDark, leather, paper) => `
 .menu li { position: relative; padding: 10px 0 10px 22px; font: 300 22px/1.15 "Helvetica Neue"; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(239,230,210,0.62); cursor: pointer; transition: color 0.15s, padding 0.15s; }
 .menu li small { display: block; margin-top: 5px; font: 400 11px/1.3 "Helvetica Neue"; letter-spacing: 0.14em; text-transform: none; color: rgba(239,230,210,0.55); }
 .menu li.sel { color: #fff6e2; padding-left: 30px; } .menu li.sel::before { content: ''; position: absolute; left: 6px; top: 50%; width: 12px; height: 2px; background: #e8cf94; }
+.menu li:active { transform: translateX(3px); color: #fff6e2; background: rgba(232,207,148,.08); }
+.menu li:focus-visible { outline: 1px solid #e8cf94; outline-offset: 4px; }
+@media (prefers-reduced-motion: reduce) { .menu li { transition: none; } .menu li:active { transform: none; } }
 .menu li.off { opacity: 0.35; }
 .panelM { position: absolute; left: 8vw; top: 50%; transform: translateY(-50%); max-width: 560px; }
 .panelM h1 { margin: 0 0 6px; font: 200 46px/1.05 "Helvetica Neue"; letter-spacing: 0.5em; }
@@ -125,6 +128,12 @@ export function createUI(ctx) {
 
   const U = { open: null, stack: [] };
   const tick = () => ctx.audio?.uiTick?.();
+  const confirm = () => {
+    ctx.audio?.uiConfirm?.();
+    let flash = document.getElementById('uiConfirmFlash');
+    if (!flash) { flash = el('div'); flash.id = 'uiConfirmFlash'; flash.setAttribute('aria-hidden', 'true'); flash.style.cssText = 'position:fixed;inset:8px;border:1px solid rgba(232,207,148,.25);pointer-events:none;z-index:1000;'; document.body.appendChild(flash); }
+    flash.hidden = false; clearTimeout(U.flashTimer); U.flashTimer = setTimeout(() => { flash.hidden = true; }, 120);
+  };
   const show = (id) => { for (const s of document.querySelectorAll('.scr')) s.classList.toggle('on', s.id === id); };
   const hideAll = () => { for (const s of document.querySelectorAll('.scr')) s.classList.remove('on'); U.open = null; };
 
@@ -272,7 +281,7 @@ export function createUI(ctx) {
     listMenu(d, PAUSE_ITEMS, pause, (k) => { if (k === 'enter') pausePick(); else tick(); });
   }
   function pausePick() {
-    const a = PAUSE_ITEMS[pause.i][1];
+    const a = PAUSE_ITEMS[pause.i][1]; confirm();
     if (a === 'resume') { hideAll(); ctx.onPause?.(false); }
     else if (a === 'pack') { hideAll(); ctx.onPause?.(false); ctx.openPackFromMenu(); }
     else if (a === 'map') openMap('pause');
@@ -325,7 +334,7 @@ export function createUI(ctx) {
     d.innerHTML = `<div class="panelM"><h1>${i.title || 'YOU DIED'}</h1><p class="why">${i.why || ''}</p><p class="stat">LAST CHECKPOINT · ${String(i.checkpoint || '').toUpperCase()} · ${S.fmtAgo(i.at || Date.now())}${i.deaths ? ` · DEATHS ${i.deaths}` : ''}</p><ul class="menu">${DEATH_ITEMS.map(([t], k) => `<li data-i="${k}" class="${k === death.i ? 'sel' : ''}">${t}</li>`).join('')}</ul></div><div class="foothint"><span class="kc">↑↓</span>select <span class="kc">ENTER</span>confirm · <span class="kc">R</span>quick retry</div>`;
     listMenu(d, DEATH_ITEMS, death, (k) => { if (k === 'enter') deathPick(); else tick(); });
   }
-  function deathPick() { const a = DEATH_ITEMS[death.i][1]; hideAll(); if (a === 'retry') ctx.onRetry(); else if (a === 'load') ctx.showTitle('load'); else ctx.onQuitToTitle(); }
+  function deathPick() { confirm(); const a = DEATH_ITEMS[death.i][1]; hideAll(); if (a === 'retry') ctx.onRetry(); else if (a === 'load') ctx.showTitle('load'); else ctx.onQuitToTitle(); }
   U.openDeath = openDeath;
 
   // ======================================================================= TITLE MENU (lives inside #title)
@@ -361,7 +370,7 @@ export function createUI(ctx) {
   const CONTROLS = [['WASD', 'move'], ['ARROW KEYS', 'look around (no mouse needed)'], ['SHIFT', 'run'], ['C', 'crouch — quiet'], ['Z / RIGHT MOUSE', 'aim'], ['LEFT MOUSE / ENTER (aiming)', 'fire · throw'], ['F', 'melee · takedown · struggle'], ['G', 'throw bottle / brick'], ['R', 'reload'], ['H', 'use health kit'], ['TAB', 'backpack — arrows + Enter'], ['M', 'map'], ['1 / 2 / 3', 'pistol · throwable · molotov'], ['SPACE', 'dodge'], ['E', 'interact / pick up'], ['HOLD Q', 'listen'], ['L', 'flashlight'], ['X', 'swap shoulder'], ['ESC / P', 'pause']];
   function leaveTitle() { U.open = null; $('title').style.display = 'none'; }
   function titlePick() {
-    const { items, last } = titleItems(); const a = items[title.i]?.[0]; tick();
+    const { items, last } = titleItems(); const a = items[title.i]?.[0]; confirm();
     if (a === 'continue') { leaveTitle(); ctx.onContinue(last); }
     else if (a === 'new') { leaveTitle(); ctx.onNewGame(); }
     else if (a === 'load') { title.view = 'load'; title.li = 0; renderTitle(); }
