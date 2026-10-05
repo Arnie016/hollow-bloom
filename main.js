@@ -280,7 +280,7 @@ function updateGuide(dt) {
 const AREA_NAME = { street: 'Elm Street', pharmacy: 'Pharmacy', corridor: 'Service corridor', apartment: 'Apartments', nest: 'The Nest', escape: 'Escape tunnel', outside: 'The yard' };
 const CP_NAME = { start: 'Elm Street', pharmacy: 'Pharmacy', apartment: 'Apartments', nest: 'The Nest', escape: 'Storeroom' };
 function foundNotes() { return NOTES.filter(n => notesFound.has(n.id)); }
-function credits() { return 'A GAME BY ARNAV SALKADE<br>BUILT WITH THREE.JS · AI-ASSISTED DEVELOPMENT (CLAUDE, CODEX)' + (W.voiceOK ? '<br>VOICE OF WREN · ELEVENLABS' : '') + '<br>SOUND EFFECTS GENERATED WITH ELEVENLABS · KENNEY (CC0) · MIXKIT<br>ART, MODELS &amp; TRAILER MADE WITH HIGGSFIELD<br>THANK YOU FOR PLAYING'; }
+function credits() { return 'A GAME BY DOODILYDO<br>BUILT WITH THREE.JS · AI-ASSISTED DEVELOPMENT (CLAUDE, CODEX)' + (W.voiceOK ? '<br>VOICE OF WREN · ELEVENLABS' : '') + '<br>SOUND EFFECTS GENERATED WITH ELEVENLABS · KENNEY (CC0) · MIXKIT<br>ART, MODELS &amp; TRAILER MADE WITH HIGGSFIELD<br>THANK YOU FOR PLAYING'; }
 ui = createUI({
   P, audio, ITEMS, MELEE, RECIPES, icons, settings, canCraft,
   flags: () => flags, notes: foundNotes,
