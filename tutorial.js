@@ -32,6 +32,10 @@ export class PracticeGuide {
   update(dt,P) {
     if(!this.active)return;this.elapsed+=dt;
     if(this.steps[this.i][2]==='walk'){this.move+=P.speed*dt;if(this.move>1.5)this.signal('walk');}
+    if(this.steps[this.i][2]==='crouch' && P.crouch)this.signal('crouch');
+    if(this.steps[this.i][2]==='pack' && P.packOpen)this.signal('pack');
+    if(this.steps[this.i][2]==='equip' && P.weapon==='pistol')this.signal('equip');
+    if(this.steps[this.i][2]==='craft' && P.items.kit>0 && !(P.craftT>0))this.signal('craft');
     if(this.steps[this.i][2]==='run' && P.speed>3.2)this.signal('run');
     if(this.steps[this.i][2]==='supplies' && P.items.cloth>=1 && P.items.alcohol>=1)this.signal('supplies');
     if(this.steps[this.i][2]==='heal' && this.healed())this.signal('heal');
