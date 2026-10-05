@@ -52,7 +52,7 @@ export function buildItem(kind) {
   const g = new THREE.Group(); g.name = 'item_' + kind;
   if (MELEE[kind]) { g.add(buildMelee(kind)); g.userData.flat = true; return shadeAll(g); } // blade along +z, lying flat
   switch (kind) {
-    case 'pistol': { const p = prop('survival_pistol_original', { size: [0.05, 0.17, 0.24] }) || prop('pistol', { size: [0.05, 0.17, 0.24] }); if (p) g.add(p); else g.add(new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.12, 0.2), std({ color: 0x151515, metalness: 0.7, roughness: 0.4 }))); break; }
+    case 'pistol': { const p = prop('survival-pistol-original', { size: [0.05, 0.17, 0.24] }) || prop('pistol', { size: [0.05, 0.17, 0.24] }); if (p) g.add(p); else g.add(new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.12, 0.2), std({ color: 0x151515, metalness: 0.7, roughness: 0.4 }))); break; }
     case 'knife': { const b = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.004, 0.09), std({ color: 0xc8c8c8, metalness: 1, roughness: 0.22 })); b.position.set(0, 0.006, 0.07); const h = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.012, 0.1), std({ color: 0x2a2420, roughness: 0.6 })); h.position.set(0, 0.006, -0.02); g.add(b, h); g.userData.flat = true; break; }
     case 'bottle': case 'molotov': {
       const b = new THREE.Mesh(bottleGeo(), glass(kind === 'molotov' ? 0x7a4a1e : 0x2f6a40, 0.62)); g.add(b);

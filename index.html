@@ -67,6 +67,18 @@
   #skip { position: fixed; right: 36px; bottom: 30px; z-index: 13; font-size: 11px; letter-spacing: 0.3em; opacity: 0.6; display: none; }
   #end p.credits { position: absolute; bottom: 40px; font-size: 9px; letter-spacing: 0.25em; opacity: 0; transition: opacity 3s 4s; max-width: 80vw; text-align: center; line-height: 2; }
   #sub { position: fixed; left: 50%; bottom: 12%; transform: translateX(-50%); font-size: 15px; opacity: 0; transition: opacity 0.6s; text-shadow: 0 1px 6px #000; font-style: italic; }
+
+#practiceGuide {position:fixed;left:50%;top:7%;transform:translateX(-50%);width:min(500px,calc(100vw - 36px));box-sizing:border-box;padding:16px 20px;background:rgba(13,20,19,.9);border:1px solid #8e8269;color:#eee4cc;font:14px/1.5 Helvetica;pointer-events:none;z-index:8;box-shadow:0 12px 28px #0004;}
+.practice-top {font-size:10px;letter-spacing:.16em;color:#c9bb9a;display:flex;justify-content:space-between;}
+.practice-content {display:flex;gap:16px;align-items:center;margin:12px 0;}
+.practice-icon {font-size:36px;color:#e7ca86;min-width:36px;text-align:center;}
+#practiceGuide h3 {font-size:20px;margin:0 0 5px;}
+#practiceGuide p {margin:0 0 10px;color:#ded8c9;}
+.practice-keys {display:inline-block;border:1px solid #a69570;padding:5px 9px;font-size:12px;letter-spacing:.06em;background:#c9bb9a18;}
+.practice-track {height:3px;background:#fff2;margin:13px 0 8px;}.practice-track i {display:block;height:100%;background:#d9c8a2;transition:width .3s;}
+#practiceGuide small {font-size:10px;color:#b6b0a2;}
+@media(max-height:600px){#practiceGuide {top:3%;padding:10px 14px;}.practice-content {margin:8px 0;}#practiceGuide h3 {font-size:17px;}}
+@media(prefers-reduced-motion:reduce){.practice-track i {transition:none;}}
 </style>
 <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }</script>
 </head>

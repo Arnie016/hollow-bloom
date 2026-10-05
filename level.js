@@ -495,7 +495,7 @@ export function buildWorld(scene) {
   // ---------------------------------------------------------------- street dressing
   const awning = new THREE.Group(); scene.add(awning);
   box(4.5, 0.08, 3, std(0x2e3a34, 0.9), 7, 3.1, 15, 0, awning).rotation.z = 0.25; // collapsed awning
-  box(0.1, 3.2, 0.1, rust, 5.2, 1.6, 13.6, 0, awning); box(0.1, 2.4, 0.1, rust, 9, 1.2, 13.8, 0, awning).rotation.z = 0.35;
+  cyl(0.025, 0.035, 3.2, rust, 5.2, 1.6, 13.6, awning); cyl(0.025, 0.035, 2.4, rust, 9, 1.2, 13.8, awning).rotation.z = 0.35;
   // wrecked car
   { const rv = prop('raven', { height: 0.55, yaw: -1.2 }); if (rv) { rv.position.set(12.2, 1.32, 8.1); scene.add(rv); world.raven = rv; } } // perched on the wrecked car's roof (FAB ASSETS)
   const carGlb = prop('car', { size: [4.3, 1.6, 2.0], yaw: 0.35 });

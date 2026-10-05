@@ -24,3 +24,11 @@ Completion: obtain medicine in the nest, follow westward escape to the yard and 
 - Menu rain waits 10 seconds, then fades in, with trim reduced from .4 to .28; gameplay trim stays .65.
 - Verified: syntax, ZIP asset paths, tutorial event ordering, browser pistol selection/fire ammo decrement/stow. Full physical keyboard walkthrough, gamepad and human sound approval remain NOT_TESTED.
 - No recorded Wren whisper files found in this checkout; no new ElevenLabs spending/generation.
+
+## Visual tutorial revision
+- First New Game now offers the practice flow automatically until practice is completed or skipped; replay remains available from Practice/Tutorial. Skipping preserves existing saves and creates a new story slot.
+- Centered coaching card with key cues, icon and progress. Hidden while the backpack is open. Added dodge, gold-marked practice cloth/alcohol pickups, actual health-kit crafting, then combat and healing.
+- Backpack items have names and accessible button labels; crafting materials give a clear explanation rather than silently doing nothing.
+- Original pistol asset key corrected; pistol uses a stable world orientation instead of inheriting the wrist roll. Thinner rounded awning supports.
+- Local module and tutorial progression checks pass. Human review of this revision and a full browser practice playthrough remain NOT_TESTED.
+- Monetization is still disabled: credits identify free-plan ElevenLabs sounds. Steam Direct is a potential later route, with $100/product onboarding fee and bank/tax/legal setup. GOG has a submission route; no acceptance or sales claim.

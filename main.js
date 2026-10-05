@@ -130,8 +130,8 @@ if (heroC?.ok) {
   hero.root.visible = false; scene.add(heroC.root); registerEnv(heroC.root);
   heroC.root.updateMatrixWorld(true);
   const hand = heroC.bones.RightHand, ws = new THREE.Vector3();
-  const g = prop('survival_pistol_original', { size: [0.05, 0.17, 0.24] }) || prop('pistol', { size: [0.05, 0.17, 0.24] }) || new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.12, 0.2), new THREE.MeshStandardMaterial({ color: 0x151515, metalness: 0.7, roughness: 0.4 }));
-  const gw = new THREE.Group(); gw.add(g); g.position.y = 0.10; g.rotation.x = -Math.PI / 2; // barrel along the aim line // grip centred in the palm
+  const g = prop('survival-pistol-original', { size: [0.05, 0.17, 0.24] }) || prop('pistol', { size: [0.05, 0.17, 0.24] }) || new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.12, 0.2), new THREE.MeshStandardMaterial({ color: 0x151515, metalness: 0.7, roughness: 0.4 }));
+  const gw = new THREE.Group(); gw.add(g); g.position.y = -0.045; g.rotation.x = 0; // barrel along the aim line // grip centred in the palm
   if (hand) { hand.getWorldScale(ws); gw.scale.setScalar(1 / ws.x); hand.add(gw); }
   scene.add(gw); gw.scale.setScalar(1); gunMesh = gw; gw.visible = false;
   const st = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.002, 0.14, 4), new THREE.MeshStandardMaterial({ color: 0xe8dcc0, roughness: 0.5 }));
@@ -579,7 +579,7 @@ function dodge() {
   if (P.struggle) { if (P.struggle.t > 2.1) { P.struggle.e.stagger = 1; P.struggle = null; } else return; }
   const f = new THREE.Vector3(Math.sin(camYaw), 0, Math.cos(camYaw)), r = new THREE.Vector3(-Math.cos(camYaw), 0, Math.sin(camYaw));
   const d = new THREE.Vector3(); if (keys.has('KeyW')) d.add(f); if (keys.has('KeyS')) d.sub(f); if (keys.has('KeyD')) d.add(r); if (keys.has('KeyA')) d.sub(r); if (d.lengthSq() < 0.01) d.copy(f).negate();
-  P.dodgeDir.copy(d.normalize()); P.dodgeT = 0.3; P.iframe = 0.35; P.dodgeCool = 0.9; audio.swoosh(); emitSound(P.pos.x, P.pos.z, 3, 'step', true);
+  P.dodgeDir.copy(d.normalize()); P.dodgeT = 0.3; P.iframe = 0.35; P.dodgeCool = 0.9; audio.swoosh(); tutorial?.signal('dodge'); emitSound(P.pos.x, P.pos.z, 3, 'step', true);
 }
 // -- environment puzzles
 function plankHome() { return world.plank.position; }
@@ -605,7 +605,14 @@ function nearbyInteract() {
   return best;
 }
 function interact() {
-  if(tutorial?.active) {toast('Practice first · T begins the story');return;}
+  if(tutorial?.active) {
+    const it=nearbyInteract();
+    if(it?.kind==='pickup' && it.p.training) {
+      taken.add(it.p.id);pickMeshes.get(it.p.id).visible=false;P.items[it.p.kind]++;
+      audio.pickup();toast(`Found ${NAME[it.p.kind]} · check Materials in Tab`);animOnce('pickup',.8);P.pickT=.6;
+    } else toast('Follow the gold supply markers · T skips practice');
+    return;
+  }
   const it = nearbyInteract(); if (!it || P.lockT > 0) return;
   if (it.kind === 'door') { if (it.d.locked) { audio.thud(P.pos); return; } openDoor(it.d, true); }
   else if (it.kind === 'pickup') {
@@ -812,7 +819,7 @@ function startNew(carry) {
   later(9, () => toast('Tab — backpack · M — map · Esc — pause'));
   checkpoint('start'); relock();
 }
-function onNewGame() { slot = S.newSlot(); if (!S.getMeta().trailerSeen) playTrailer(true); else startNew(); }
+function onNewGame(skipPractice=false) { if(!skipPractice && !S.getMeta().practiceSeen){startPractice();return;} slot = S.newSlot(); if (!S.getMeta().trailerSeen) playTrailer(true); else startNew(); }
 function onContinue(sl) {
   tutorial?.stop();
   slot = sl; S.setMeta({ lastSlot: sl.id }); W.cycle = sl.cycle || 0;
@@ -850,7 +857,7 @@ function update(dt) {
   if (settings.keyLook && !P.dead) { const ks = 2.1 * (settings.sens / 5) * (P.aimK > 0.5 ? 0.5 : 1); if (keys.has('ArrowLeft')) camYaw += ks * dt; if (keys.has('ArrowRight')) camYaw -= ks * dt; const ps = ks * 0.6 * (settings.invertY ? -1 : 1); if (keys.has('ArrowUp')) camPitch = clamp(camPitch + ps * dt, -1.1, 0.85); if (keys.has('ArrowDown')) camPitch = clamp(camPitch - ps * dt, -1.1, 0.85); }
   if (flags.escape && !flags.pastTear && L.cellOf(P.pos.x, P.pos.z)[0] <= 36) { flags.pastTear = true; objective('GET OUT', 'Follow the red lights west to the EXIT door'); }
   mapApi.reveal(P.pos.x, P.pos.z, dt); if(!tutorial?.active)updateGuide(dt);
-  tutorial?.update(dt,P); shotPose=Math.max(0,shotPose-dt);
+  tutorial?.update(dt,P); if($('practiceGuide'))$('practiceGuide').style.visibility=P.packOpen?'hidden':'visible'; shotPose=Math.max(0,shotPose-dt);
   if (P.anim) { P.anim.t -= dt; if (P.anim.t <= 0) P.anim = null; }
   if (P.riposte) { P.riposte.t -= dt; if (P.riposte.t <= 0) P.riposte = null; }
   // bleeding infected (machete): blood trail, then the wound finishes them
@@ -862,7 +869,7 @@ function update(dt) {
   hero.extras.knife.visible = false; // the shared hand-mounted knife is the visible item
   if (P.reloadT > 0) { P.reloadT -= dt; if (P.reloadT <= 0) { const n = Math.min(P.magSize - P.ammo, P.spare); P.ammo += n; P.spare -= n; } }
   if (P.healT > 0) { P.healT -= dt; if (P.healT <= 0) { P.items.kit--; P.hp = Math.min(100, P.hp + 50); toast('Patched up'); showInv(); } }
-  if (P.craftT > 0) { P.craftT -= dt; if (P.craftT <= 0) { const r = RECIPES.find(x => x.id === P.craftWhat); if (r?.id === 'repair' && canCraft(r)) { P.items.binding--; P.melee.dur = Math.min(MELEE[P.melee.id].dur, P.melee.dur + 3); audio.sample('belt', null, 0.8); toast('Wrapped and reinforced'); } else if (r && canCraft(r)) { for (const [k, n] of Object.entries(r.need)) P.items[k] -= n; P.items[r.id]++; toast(`Crafted ${NAME[r.id].toLowerCase()}`); showInv(); if (r.id === 'molotov') P.weapon = 'molotov'; } P.craftWhat = null; hudT = 0; } }
+  if (P.craftT > 0) { P.craftT -= dt; if (P.craftT <= 0) { const r = RECIPES.find(x => x.id === P.craftWhat); if (r?.id === 'repair' && canCraft(r)) { P.items.binding--; P.melee.dur = Math.min(MELEE[P.melee.id].dur, P.melee.dur + 3); audio.sample('belt', null, 0.8); toast('Wrapped and reinforced'); } else if (r && canCraft(r)) { for (const [k, n] of Object.entries(r.need)) P.items[k] -= n; P.items[r.id]++; toast(`Crafted ${NAME[r.id].toLowerCase()}`); if(r.id==='kit' && tutorial?.active && tutorial.steps[tutorial.i][2]==='craft') {if(P.packOpen)ui.closePack();tutorial.signal('craft');} showInv(); if (r.id === 'molotov') P.weapon = 'molotov'; } P.craftWhat = null; hudT = 0; } }
   P.listen = keys.has('KeyQ') && !P.dead && !P.struggle;
   P.aim = (mouseDown[2] || keys.has('KeyZ') || shotPose > 0) && !P.dead && !P.struggle && P.lockT <= 0 && P.healT <= 0 && !P.carry;
   P.aimK = lerp(P.aimK, P.aim ? 1 : 0, Math.min(1, dt * 10));
@@ -976,8 +983,12 @@ function animatePlayer(dt, canRun, crouching) {
     heroC.root.updateMatrixWorld(true);
     const itemHand = heroC.bones.RightHand;
     if (itemHand) {
-      itemHand.getWorldPosition(gunMesh.position); itemHand.getWorldQuaternion(gunMesh.quaternion);
-      meleeHolder.position.copy(gunMesh.position); meleeHolder.quaternion.copy(gunMesh.quaternion);
+      itemHand.getWorldPosition(gunMesh.position);
+      gunMesh.quaternion.copy(heroC.root.quaternion);
+      gunMesh.rotateX(P.aimK > 0.5 ? -camPitch : 0);
+      gunMesh.position.y -= 0.025;
+      itemHand.getWorldQuaternion(meleeHolder.quaternion);
+      itemHand.getWorldPosition(meleeHolder.position);
     }
     if(P.healT > 0) {
       const k=1-P.healT/2.2, b=heroC.bones.RightHand;
@@ -1069,18 +1080,29 @@ function loop() {
 function startPractice() {
   slot=null;restoreSnap(initialSnap,true);mode='play';playT=0;keys.clear();mouseDown=[false,false,false];
   for(const e of enemies)e.dispose();enemies.length=0;
-  P.weapon='none';P.ammo=6;P.spare=24;P.items.kit=2;P.items.bottle=2;P.hp=100;
+  P.weapon='none';P.ammo=6;P.spare=24;P.items.kit=0;P.items.cloth=0;P.items.alcohol=0;P.items.bottle=2;P.hp=100;
   tutorial.start();$('objective').style.opacity=0;ui.guide(false);fade(0,0.5);relock();
 }
 tutorial = new PracticeGuide({
  show: data => {
-  let box=$('practiceGuide');if(!box){box=document.createElement('div');box.id='practiceGuide';box.style.cssText='position:fixed;left:30px;top:26px;max-width:410px;padding:16px 20px;background:rgba(15,20,18,.88);border-left:2px solid #d9c8a2;color:#eee4cc;font:14px/1.6 Helvetica;pointer-events:none;z-index:8';document.body.appendChild(box);}
-  box.hidden=!data;if(data)box.innerHTML=`<small>PRACTICE ${data.index} / ${data.total} · T skip to story</small><h3 style="margin:6px 0">${data.title}</h3><div>${data.body}</div>`;
+  let box=$('practiceGuide');if(!box){box=document.createElement('div');box.id='practiceGuide';document.body.appendChild(box);}
+  box.hidden=!data;
+  if(data)box.innerHTML=`<div class="practice-top">LEARN TO SURVIVE <span>${data.index} / ${data.total}</span></div><div class="practice-content"><b class="practice-icon">${data.icon}</b><div><h3>${data.title}</h3><p>${data.body}</p><strong class="practice-keys">${data.keys}</strong></div></div><div class="practice-track"><i style="width:${data.index/data.total*100}%"></i></div><small>T skip to story · practice does not change your saves</small>`;
+
  },
  spawn: () => { const e=new Enemy({id:'practice-infected',type:'frenzied',x:8,z:7,yaw:-Math.PI/2},W);e.hp=2;e.cfg={...e.cfg,walk:0.6,run:1.1};enemies.push(e);registerEnv(e.h.root);P.ammo=6;P.spare=24; },
  prepareHeal: () => {P.hp=60;P.items.kit=Math.max(1,P.items.kit);toast('Practice injury · H applies antiseptic and a wrap');},
  healed: () => P.hp>=99 && P.healT<=0,
- finish: () => onNewGame(),
+ supplies: () => {
+   for(const [kind,dx] of [['cloth',-1],['alcohol',1]]) {
+     const id=`practice-${kind}`,g=new THREE.Group();g.position.set(P.pos.x+dx,0,P.pos.z+2);
+     const item=buildItem(kind);item.position.y=.4;g.add(item);
+     const marker=new THREE.Mesh(new THREE.OctahedronGeometry(.14),new THREE.MeshBasicMaterial({color:0xe7ca86}));marker.position.y=.95;g.add(marker);
+     const ring=new THREE.Mesh(new THREE.TorusGeometry(.3,.016,5,24),new THREE.MeshBasicMaterial({color:0xe7ca86}));ring.rotation.x=Math.PI/2;ring.position.y=.035;g.add(ring);
+     const [x,z]=L.cellOf(g.position.x,g.position.z);scene.add(g);pickMeshes.set(id,g);L.PICKUPS.push({id,kind,x,z,dyn:true,training:true});
+   }
+ },
+ finish: () => {S.setMeta({practiceSeen:true});onNewGame(true);},
 });
 const initialSnap = snapshot('start'); initialSnap.enemies = L.ENEMIES.map(d => d.id); initialSnap.hp = 100; initialSnap.yaw = Math.PI / 2; initialSnap.flash = false; initialSnap.map = null; initialSnap.notes = []; initialSnap.stats = { kills: 0, deaths: 0 };
 loop();

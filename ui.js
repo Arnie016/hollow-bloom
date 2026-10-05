@@ -80,7 +80,10 @@ const CSS = (fab, fabDark, leather, paper) => `
 #packScr .row[hidden] { display:none; }
 #packScr .row > label { margin-bottom:0;font-size:9px;letter-spacing:.15em; }
 #packScr .pks { display:grid;grid-template-columns:repeat(5,minmax(0,1fr)); }
-#packScr .pk { width:100%;height:52px;max-width:72px; }
+#packScr .pk { width:100%;height:64px;max-width:82px; }
+#packScr .pk .item-name {position:absolute;left:1px;right:1px;bottom:1px;text-align:center;font:9px/1.15 Helvetica;color:#e9dfc8;background:#121916dd;padding:3px 1px;}
+#packScr .pk .n {bottom:17px;}
+#packScr .pk img {max-height:45px;}
 #packScr .pk:hover { border-color:#b9a579;transform:translateY(-2px); }
 #packScr .pk img { width:82%;height:82%;left:9%;top:3%; }
 #packScr .pk .n { font-size:13px; }
@@ -206,7 +209,7 @@ export function createUI(ctx) {
         const empty = !isRec && (s.n === 0 || s.n === '0'); const ok = isRec && ctx.canCraft(s.recipe);
         const busy = isRec && craft && craft.id === s.recipe.id;
         const cls = ['pk', empty ? 'empty' : '', ok ? 'ready' : '', isRec && !ok && !busy ? 'empty' : '', busy ? 'busy' : ''].join(' ');
-        h += `<div class="${cls}" data-r="${ri}" data-c="${ci}" style="--k:${busy ? craft.k : 0}"><img src="${icon(s.k)}" alt="">${s.eq && !isRec ? '<span class="tag">EQUIPPED</span>' : ''}${isRec ? `<span class="tag">${s.recipe.id === 'repair' ? 'REPAIR' : 'CRAFT'}</span>` : ''}${s.n !== '' && s.n !== undefined ? `<span class="n">${s.n}</span>` : ''}${s.bar != null ? `<span class="bar"><i style="width:${Math.round(s.bar * 100)}%"></i></span>` : ''}</div>`;
+        h += `<div role="button" aria-label="${isRec ? 'Craft ' : ''}${ctx.ITEMS[s.k]?.name || s.k}" class="${cls}" data-r="${ri}" data-c="${ci}" style="--k:${busy ? craft.k : 0}"><img src="${icon(s.k)}" alt="">${s.eq && !isRec ? '<span class="tag">EQUIPPED</span>' : ''}${isRec ? `<span class="tag">${s.recipe.id === 'repair' ? 'REPAIR' : 'CRAFT'}</span>` : ''}${s.n !== '' && s.n !== undefined ? `<span class="n">${s.n}</span>` : ''}${s.bar != null ? `<span class="bar"><i style="width:${Math.round(s.bar * 100)}%"></i></span>` : ''}<span class="item-name">${ctx.ITEMS[s.k]?.name || s.k}</span></div>`;
       });
       h += `</div></div>`;
     });
@@ -274,6 +277,7 @@ export function createUI(ctx) {
       else if (s.act === 'reload') ctx.reload();
       else if (s.act === 'read') { openNotes('pack'); return; }
       else if (s.act === 'map') { closePack(); ctx.openMap(); return; }
+      else ctx.toast?.('Crafting material · use it in a recipe from the Craft row');
     }
     tickPack();
   }
