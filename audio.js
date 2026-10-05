@@ -53,8 +53,8 @@ export class AudioSys {
     if (!active) { this.menuBeat = 0; this.menuRainTime = 0; return; }
     this.menuRainTime = (this.menuRainTime || 0) + dt;
     this.layers.drone.gain.setTargetAtTime(0.15, t, 2);
-    this.rainG.gain.setTargetAtTime(this.menuRainTime > 10 ? 0.18 : 0, t, 2);
-    this.rainTrim.gain.setTargetAtTime(0.28, t, 0.7);
+    this.rainG.gain.setTargetAtTime(this.menuRainTime > 10 ? 0.025 : 0, t, 2);
+    this.rainTrim.gain.setTargetAtTime(0.12, t, 0.7);
     this.menuBeat -= dt;
     if (this.menuBeat <= 0) {
       const notes = [164.81, 246.94, 174.61, 220, 164.81, 130.81, 185, 123.47];
